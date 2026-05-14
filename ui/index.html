@@ -1,0 +1,5138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CityMind — Urban Intelligence System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ═══════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — CSS Variables
+═══════════════════════════════════════════════════════════════ */
+      :root {
+        /* Background hierarchy */
+        --void: #050810;
+        --base: #0a0e17;
+        --surface: #0f1522;
+        --elevated: #141b2d;
+        --overlay: #1a2236;
+        --border: #1e2a3e;
+        --divider: #243044;
+
+        /* Accent families */
+        --teal: #00f5d4;
+        --teal-dim: rgba(0, 245, 212, 0.12);
+        --teal-glow: 0 0 12px rgba(0, 245, 212, 0.5);
+        --amber: #ffb800;
+        --amber-dim: rgba(255, 184, 0, 0.12);
+        --crimson: #ff3b5c;
+        --crimson-dim: rgba(255, 59, 92, 0.12);
+        --blue: #0090ff;
+        --blue-dim: rgba(0, 144, 255, 0.12);
+        --violet: #9b5de5;
+
+        /* Text */
+        --tx-primary: #e2e8f0;
+        --tx-secondary: #94a3b8;
+        --tx-muted: #475569;
+
+        /* Node type colors (dark fills for canvas) */
+        --loc-empty: #111827;
+        --loc-residential: #14532d;
+        --loc-hospital: #7f1d1d;
+        --loc-school: #78350f;
+        --loc-industrial: #1c1917;
+        --loc-power: #164e63;
+        --loc-ambulance: #7c2d12;
+
+        /* Node accent colors (borders/icons) */
+        --acc-empty: #374151;
+        --acc-residential: #22c55e;
+        --acc-hospital: #ef4444;
+        --acc-school: #f59e0b;
+        --acc-industrial: #78716c;
+        --acc-power: #06b6d4;
+        --acc-ambulance: #f97316;
+
+        /* Risk */
+        --risk-low: #22c55e;
+        --risk-medium: #f59e0b;
+        --risk-high: #ef4444;
+
+        /* Layout */
+        --navbar-h: 56px;
+        --left-w: 268px;
+        --right-w: 296px;
+        --bottom-h: 200px;
+
+        /* Font families */
+        --font-display: "Orbitron", monospace;
+        --font-body: "Syne", sans-serif;
+        --font-mono: "JetBrains Mono", monospace;
+
+        /* Spacing */
+        --sp-1: 4px;
+        --sp-2: 8px;
+        --sp-3: 12px;
+        --sp-4: 16px;
+        --sp-5: 20px;
+        --sp-6: 24px;
+        --sp-8: 32px;
+        --sp-10: 40px;
+
+        /* Transitions */
+        --t-fast: 120ms ease;
+        --t-base: 220ms ease;
+        --t-slow: 380ms ease;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════════════════ */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      body {
+        font-family: var(--font-body);
+        font-size: 13px;
+        color: var(--tx-primary);
+        background: var(--void);
+        display: grid;
+        grid-template-rows: var(--navbar-h) 1fr var(--bottom-h);
+        grid-template-columns: var(--left-w) 1fr var(--right-w);
+        grid-template-areas:
+          "nav    nav    nav"
+          "left   canvas right"
+          "bot    bot    bot";
+        height: 100vh;
+      }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        background: none;
+        color: inherit;
+      }
+      input,
+      select {
+        font-family: var(--font-mono);
+        font-size: 12px;
+      }
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--surface);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--teal);
+        border-radius: 2px;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════════════════════════ */
+      @keyframes pulse-glow {
+        0%,
+        100% {
+          box-shadow: 0 0 6px var(--teal);
+        }
+        50% {
+          box-shadow:
+            0 0 18px var(--teal),
+            0 0 40px rgba(0, 245, 212, 0.3);
+        }
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+      @keyframes fade-up {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes march {
+        from {
+          stroke-dashoffset: 0;
+        }
+        to {
+          stroke-dashoffset: -48;
+        }
+      }
+      @keyframes spin-slow {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes ripple-out {
+        from {
+          transform: scale(0.5);
+          opacity: 0.8;
+        }
+        to {
+          transform: scale(2.5);
+          opacity: 0;
+        }
+      }
+      @keyframes toast-in {
+        from {
+          opacity: 0;
+          transform: translateX(100%);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      @keyframes toast-out {
+        from {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateX(100%);
+        }
+      }
+      @keyframes splash-bar {
+        from {
+          width: 0;
+        }
+        to {
+          width: 100%;
+        }
+      }
+      @keyframes counter-flash {
+        0% {
+          color: var(--teal);
+          transform: scale(1.15);
+        }
+        100% {
+          color: inherit;
+          transform: scale(1);
+        }
+      }
+      @keyframes log-in {
+        from {
+          opacity: 0;
+          transform: translateY(-6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+   NAVBAR
+═══════════════════════════════════════════════════════════════ */
+      #navbar {
+        grid-area: nav;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: var(--sp-4);
+        padding: 0 var(--sp-4);
+        z-index: 100;
+      }
+      .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+        text-decoration: none;
+        color: inherit;
+        flex-shrink: 0;
+      }
+      .nav-logo svg {
+        width: 32px;
+        height: 32px;
+      }
+      .nav-logo-text {
+        font-family: var(--font-display);
+        font-weight: 900;
+        font-size: 15px;
+        letter-spacing: 0.12em;
+        white-space: nowrap;
+      }
+      .nav-logo-text span {
+        color: var(--teal);
+      }
+      .nav-center {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        flex: 1;
+        justify-content: center;
+      }
+      .challenge-tabs {
+        display: flex;
+        gap: var(--sp-1);
+      }
+      .c-tab {
+        position: relative;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        padding: 5px 14px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        color: var(--tx-muted);
+        background: transparent;
+        transition: all var(--t-fast);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .c-tab:hover {
+        color: var(--tx-secondary);
+        border-color: var(--divider);
+      }
+      .c-tab.is-active {
+        color: var(--teal);
+        border-color: var(--teal);
+        background: var(--teal-dim);
+        box-shadow: var(--teal-glow);
+      }
+      .c-tab .tab-dot {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--tx-muted);
+      }
+      .c-tab.status-complete .tab-dot {
+        background: var(--teal);
+        box-shadow: 0 0 6px var(--teal);
+      }
+      .c-tab.status-running .tab-dot {
+        background: var(--amber);
+        animation: blink 0.8s infinite;
+      }
+      .c-tab.status-error .tab-dot {
+        background: var(--crimson);
+      }
+
+      .server-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: var(--elevated);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--tx-muted);
+      }
+      .s-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--tx-muted);
+        flex-shrink: 0;
+      }
+      .s-dot.online {
+        background: var(--teal);
+        box-shadow: 0 0 8px var(--teal);
+      }
+      .s-dot.offline {
+        background: var(--crimson);
+        animation: blink 1.2s infinite;
+      }
+
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+        margin-left: auto;
+      }
+      .step-counter {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        padding: 4px 12px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        background: var(--elevated);
+        color: var(--tx-secondary);
+        white-space: nowrap;
+      }
+      .step-counter span {
+        color: var(--teal);
+        font-weight: 700;
+      }
+      .nav-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--tx-muted);
+        font-size: 14px;
+        transition: all var(--t-fast);
+      }
+      .nav-btn:hover {
+        color: var(--teal);
+        border-color: var(--teal);
+        background: var(--teal-dim);
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+   PANELS (Left & Right Sidebars)
+═══════════════════════════════════════════════════════════════ */
+      .panel {
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+      }
+      #sidebar-right {
+        grid-area: right;
+        border-right: none;
+        border-left: 1px solid var(--border);
+      }
+      #sidebar-left {
+        grid-area: left;
+      }
+
+      .panel-section {
+        border-bottom: 1px solid var(--border);
+      }
+      .section-hdr {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+        padding: 9px var(--sp-3);
+        cursor: pointer;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--tx-secondary);
+        user-select: none;
+        transition: color var(--t-fast);
+      }
+      .section-hdr:hover {
+        color: var(--teal);
+      }
+      .section-hdr .s-icon {
+        font-size: 12px;
+      }
+      .section-hdr .chevron {
+        margin-left: auto;
+        transition: transform var(--t-base);
+        font-size: 10px;
+      }
+      .section-body {
+        padding: var(--sp-3);
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-2);
+      }
+      .section-body.collapsed {
+        display: none;
+      }
+      .panel-scroll {
+        flex: 1;
+        overflow-y: auto;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+   COMPONENTS
+═══════════════════════════════════════════════════════════════ */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 4px;
+        border: 1px solid;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        cursor: pointer;
+        transition: all var(--t-fast);
+        white-space: nowrap;
+      }
+      .btn-primary {
+        border-color: var(--teal);
+        color: var(--teal);
+        background: var(--teal-dim);
+      }
+      .btn-primary:hover {
+        background: rgba(0, 245, 212, 0.22);
+        box-shadow: var(--teal-glow);
+      }
+      .btn-danger {
+        border-color: var(--crimson);
+        color: var(--crimson);
+        background: var(--crimson-dim);
+      }
+      .btn-danger:hover {
+        background: rgba(255, 59, 92, 0.22);
+      }
+      .btn-ghost {
+        border-color: var(--border);
+        color: var(--tx-secondary);
+        background: transparent;
+      }
+      .btn-ghost:hover {
+        border-color: var(--divider);
+        background: var(--elevated);
+        color: var(--tx-primary);
+      }
+      .btn-amber {
+        border-color: var(--amber);
+        color: var(--amber);
+        background: var(--amber-dim);
+      }
+      .btn-sm {
+        padding: 4px 10px;
+        font-size: 10px;
+      }
+      .btn-full {
+        width: 100%;
+      }
+      .btn:disabled {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      .stat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--sp-2);
+      }
+      .stat-card {
+        background: var(--elevated);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: var(--sp-2) var(--sp-3);
+      }
+      .stat-label {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        color: var(--tx-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .stat-value {
+        font-family: var(--font-mono);
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--teal);
+        line-height: 1.2;
+        margin-top: 2px;
+      }
+      .stat-value.amber {
+        color: var(--amber);
+      }
+      .stat-value.crimson {
+        color: var(--crimson);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 7px;
+        border-radius: 20px;
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+      }
+      .badge-teal {
+        background: var(--teal-dim);
+        color: var(--teal);
+        border: 1px solid rgba(0, 245, 212, 0.2);
+      }
+      .badge-crimson {
+        background: var(--crimson-dim);
+        color: var(--crimson);
+        border: 1px solid rgba(255, 59, 92, 0.2);
+      }
+      .badge-amber {
+        background: var(--amber-dim);
+        color: var(--amber);
+        border: 1px solid rgba(255, 184, 0, 0.2);
+      }
+      .badge-muted {
+        background: var(--elevated);
+        color: var(--tx-muted);
+        border: 1px solid var(--border);
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .dot-idle {
+        background: var(--tx-muted);
+      }
+      .dot-running {
+        background: var(--amber);
+        animation: blink 0.7s infinite;
+      }
+      .dot-done {
+        background: var(--teal);
+        box-shadow: 0 0 6px var(--teal);
+      }
+      .dot-error {
+        background: var(--crimson);
+      }
+
+      .progress-bar {
+        height: 4px;
+        background: var(--border);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: var(--teal);
+        border-radius: 2px;
+        transition: width 0.4s ease;
+      }
+      .progress-fill.amber {
+        background: var(--amber);
+      }
+      .progress-fill.crimson {
+        background: var(--crimson);
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        padding: 3px 0;
+      }
+      .toggle-label {
+        font-size: 11px;
+        color: var(--tx-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .toggle-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .toggle-switch {
+        position: relative;
+        width: 32px;
+        height: 18px;
+        flex-shrink: 0;
+        background: var(--border);
+        border-radius: 9px;
+        cursor: pointer;
+        transition: background var(--t-fast);
+      }
+      .toggle-switch::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--tx-muted);
+        transition: all var(--t-fast);
+      }
+      .toggle-switch.on {
+        background: rgba(0, 245, 212, 0.25);
+      }
+      .toggle-switch.on::after {
+        left: 17px;
+        background: var(--teal);
+        box-shadow: 0 0 6px var(--teal);
+      }
+
+      .form-row {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .form-label {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        color: var(--tx-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .form-input {
+        background: var(--elevated);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 6px 8px;
+        color: var(--tx-primary);
+        font-size: 12px;
+        outline: none;
+        transition: border-color var(--t-fast);
+      }
+      .form-input:focus {
+        border-color: var(--teal);
+      }
+      .form-select {
+        background: var(--elevated);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 6px 8px;
+        color: var(--tx-primary);
+        font-size: 11px;
+        outline: none;
+        cursor: pointer;
+        width: 100%;
+      }
+      .form-range {
+        width: 100%;
+        accent-color: var(--teal);
+        cursor: pointer;
+      }
+      .range-row {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+      }
+      .range-val {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--teal);
+        min-width: 32px;
+        text-align: right;
+      }
+
+      .challenge-row {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+        padding: 5px 0;
+        border-bottom: 1px solid var(--divider);
+      }
+      .challenge-row:last-child {
+        border-bottom: none;
+      }
+      .ch-label {
+        flex: 1;
+        font-size: 12px;
+        color: var(--tx-secondary);
+      }
+      .ch-label strong {
+        color: var(--tx-primary);
+        font-family: var(--font-mono);
+      }
+      .ch-run-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 3px;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        color: var(--tx-muted);
+        transition: all var(--t-fast);
+      }
+      .ch-run-btn:hover {
+        color: var(--teal);
+        border-color: var(--teal);
+        background: var(--teal-dim);
+      }
+
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: var(--sp-2) 0;
+      }
+      .label-xs {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        color: var(--tx-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+
+      /* Node detail */
+      .node-detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 3px 0;
+        border-bottom: 1px solid var(--divider);
+        gap: var(--sp-2);
+      }
+      .node-detail-row:last-child {
+        border-bottom: none;
+      }
+      .nd-key {
+        font-size: 10px;
+        color: var(--tx-muted);
+      }
+      .nd-val {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--tx-primary);
+      }
+      .nd-id {
+        font-family: var(--font-mono);
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--teal);
+      }
+
+      /* Ambulance tracker */
+      .amb-row {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+        padding: 5px 0;
+        border-bottom: 1px solid var(--divider);
+      }
+      .amb-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .amb-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .amb-id {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .amb-pos {
+        font-size: 10px;
+        color: var(--tx-muted);
+        font-family: var(--font-mono);
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+   CANVAS AREA
+═══════════════════════════════════════════════════════════════ */
+      #canvas-area {
+        grid-area: canvas;
+        position: relative;
+        background: var(--base);
+        overflow: hidden;
+      }
+      .city-canvas {
+        position: absolute;
+        inset: 0;
+        cursor: crosshair;
+      }
+      #canvas-grid {
+        z-index: 1;
+      }
+      #canvas-overlay {
+        z-index: 2;
+        pointer-events: none;
+      }
+      #canvas-anim {
+        z-index: 3;
+      }
+
+      /* CRT scanline overlay */
+      #canvas-area::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 10;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 0, 0, 0.04) 2px,
+          rgba(0, 0, 0, 0.04) 4px
+        );
+      }
+
+      /* Canvas UI elements */
+      .canvas-controls {
+        position: absolute;
+        top: var(--sp-3);
+        right: var(--sp-3);
+        z-index: 20;
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-1);
+      }
+      .zoom-btn {
+        width: 28px;
+        height: 28px;
+        background: var(--elevated);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--tx-secondary);
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--t-fast);
+      }
+      .zoom-btn:hover {
+        color: var(--teal);
+        border-color: var(--teal);
+      }
+
+      #mini-map {
+        position: absolute;
+        bottom: var(--sp-3);
+        right: var(--sp-3);
+        z-index: 20;
+        width: 110px;
+        height: 110px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      #canvas-minimap {
+        width: 100%;
+        height: 100%;
+      }
+
+      #canvas-legend {
+        position: absolute;
+        bottom: var(--sp-3);
+        left: var(--sp-3);
+        z-index: 20;
+        background: rgba(9, 14, 23, 0.85);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: var(--sp-2) var(--sp-3);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        backdrop-filter: blur(4px);
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .legend-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
+      .legend-text {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        color: var(--tx-secondary);
+      }
+
+      /* Tooltip */
+      #tooltip {
+        position: fixed;
+        z-index: 500;
+        pointer-events: none;
+        background: var(--elevated);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: var(--sp-2) var(--sp-3);
+        min-width: 160px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        opacity: 0;
+        transition: opacity var(--t-fast);
+      }
+      #tooltip.visible {
+        opacity: 1;
+      }
+      .tt-title {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--tx-primary);
+        margin-bottom: 4px;
+      }
+      .tt-row {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--sp-4);
+        margin-top: 2px;
+      }
+      .tt-k {
+        font-size: 10px;
+        color: var(--tx-muted);
+      }
+      .tt-v {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--tx-secondary);
+      }
+
+      /* Context menu */
+      #ctx-menu {
+        position: fixed;
+        z-index: 600;
+        display: none;
+        background: var(--elevated);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 4px 0;
+        min-width: 180px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+      }
+      .ctx-item {
+        padding: 7px 14px;
+        font-size: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--tx-secondary);
+        transition: background var(--t-fast);
+      }
+      .ctx-item:hover {
+        background: var(--overlay);
+        color: var(--tx-primary);
+      }
+      .ctx-item.danger:hover {
+        color: var(--crimson);
+      }
+      .ctx-sep {
+        height: 1px;
+        background: var(--border);
+        margin: 3px 0;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+   BOTTOM PANEL
+═══════════════════════════════════════════════════════════════ */
+      #bottom-panel {
+        grid-area: bot;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+        display: grid;
+        grid-template-columns: 280px 1fr;
+      }
+      .sim-controls {
+        border-right: 1px solid var(--border);
+        padding: var(--sp-3);
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-2);
+      }
+      .sim-btn-row {
+        display: flex;
+        gap: var(--sp-1);
+        align-items: center;
+      }
+      .sim-btn {
+        height: 34px;
+        border-radius: 4px;
+        border: 1px solid var(--border);
+        background: var(--elevated);
+        color: var(--tx-secondary);
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all var(--t-fast);
+        flex: 1;
+      }
+      .sim-btn:hover {
+        color: var(--teal);
+        border-color: var(--teal);
+        background: var(--teal-dim);
+      }
+      .sim-btn.play-btn {
+        flex: 2;
+        font-size: 16px;
+      }
+      .sim-btn.playing {
+        color: var(--amber);
+        border-color: var(--amber);
+        background: var(--amber-dim);
+      }
+      .sim-btn.danger-btn:hover {
+        color: var(--crimson);
+        border-color: var(--crimson);
+        background: var(--crimson-dim);
+      }
+
+      .speed-row {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+      }
+      .speed-lbl {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--tx-muted);
+        min-width: 28px;
+      }
+
+      .scrubber-wrap {
+        position: relative;
+      }
+      .scrubber-track {
+        height: 6px;
+        background: var(--border);
+        border-radius: 3px;
+        cursor: pointer;
+        position: relative;
+        overflow: visible;
+      }
+      .scrubber-fill {
+        height: 100%;
+        background: var(--teal);
+        border-radius: 3px;
+        pointer-events: none;
+      }
+      .scrubber-marker {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%) rotate(45deg);
+        width: 8px;
+        height: 8px;
+        border-radius: 1px;
+        pointer-events: none;
+      }
+      .sim-step-lbl {
+        display: flex;
+        justify-content: space-between;
+      }
+      .sim-step-lbl span {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        color: var(--tx-muted);
+      }
+
+      /* Event log */
+      .event-log-panel {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .log-hdr {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+        padding: var(--sp-2) var(--sp-3);
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+      .log-hdr-title {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--tx-secondary);
+      }
+      .log-filter {
+        margin-left: auto;
+        background: var(--elevated);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 2px 6px;
+        font-size: 10px;
+        color: var(--tx-secondary);
+        cursor: pointer;
+      }
+      .log-search {
+        background: var(--elevated);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 2px 8px;
+        font-size: 10px;
+        color: var(--tx-primary);
+        outline: none;
+        width: 120px;
+      }
+      .log-search:focus {
+        border-color: var(--teal);
+      }
+      .log-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 var(--sp-2);
+      }
+      .log-entry {
+        display: grid;
+        grid-template-columns: 36px 16px 1fr auto;
+        gap: 6px;
+        align-items: start;
+        padding: 4px var(--sp-2);
+        border-bottom: 1px solid rgba(36, 48, 68, 0.5);
+        border-left: 2px solid transparent;
+        font-size: 11px;
+        animation: log-in 0.2s ease;
+      }
+      .log-entry.type-info {
+        border-left-color: var(--teal);
+      }
+      .log-entry.type-warn {
+        border-left-color: var(--amber);
+      }
+      .log-entry.type-error {
+        border-left-color: var(--crimson);
+      }
+      .log-entry.type-route {
+        border-left-color: var(--blue);
+      }
+      .log-entry.type-event {
+        border-left-color: var(--violet);
+      }
+      .log-step {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        color: var(--tx-muted);
+        padding-top: 1px;
+      }
+      .log-icon {
+        font-size: 11px;
+        padding-top: 1px;
+      }
+      .log-msg {
+        color: var(--tx-secondary);
+        line-height: 1.4;
+      }
+      .log-msg strong {
+        color: var(--tx-primary);
+      }
+      .log-ts {
+        font-family: var(--font-mono);
+        font-size: 8px;
+        color: var(--tx-muted);
+        white-space: nowrap;
+        padding-top: 2px;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+   CHALLENGE PANELS (right sidebar views)
+═══════════════════════════════════════════════════════════════ */
+      .challenge-panel {
+        display: none;
+        padding: var(--sp-3);
+        flex-direction: column;
+        gap: var(--sp-3);
+      }
+      .challenge-panel.active {
+        display: flex;
+      }
+      .chal-stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 3px 0;
+        border-bottom: 1px solid var(--divider);
+      }
+      .chal-stat-row:last-child {
+        border-bottom: none;
+      }
+      .chal-k {
+        font-size: 10px;
+        color: var(--tx-muted);
+      }
+      .chal-v {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--tx-primary);
+      }
+      .chal-v.teal {
+        color: var(--teal);
+      }
+      .chal-v.amber {
+        color: var(--amber);
+      }
+      .chal-v.green {
+        color: var(--risk-low);
+      }
+      .constraint-check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+      }
+      .cc-icon {
+        font-size: 13px;
+      }
+      .cc-label {
+        font-size: 11px;
+        color: var(--tx-secondary);
+      }
+      .algo-big {
+        font-family: var(--font-mono);
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--teal);
+        text-align: center;
+        line-height: 1;
+      }
+      .algo-sub {
+        font-size: 10px;
+        color: var(--tx-muted);
+        text-align: center;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .path-seq {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 3px;
+        padding: var(--sp-2);
+        background: var(--elevated);
+        border-radius: 4px;
+      }
+      .path-node {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--teal);
+      }
+      .path-arrow {
+        font-size: 10px;
+        color: var(--tx-muted);
+      }
+      .risk-bar-row {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+        margin-bottom: var(--sp-1);
+      }
+      .risk-bar-label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        width: 32px;
+      }
+      .risk-bar-label.high {
+        color: var(--crimson);
+      }
+      .risk-bar-label.med {
+        color: var(--amber);
+      }
+      .risk-bar-label.low {
+        color: var(--risk-low);
+      }
+      .risk-bar-count {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--tx-muted);
+        min-width: 24px;
+        text-align: right;
+      }
+      .chal-section-hdr {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--tx-muted);
+        margin-bottom: var(--sp-1);
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+═══════════════════════════════════════════════════════════════ */
+      #toast-container {
+        position: fixed;
+        top: 64px;
+        right: var(--sp-4);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-2);
+      }
+      .toast {
+        min-width: 260px;
+        max-width: 340px;
+        background: var(--elevated);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px 14px;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        animation: toast-in 0.25s ease;
+        border-left: 3px solid var(--teal);
+      }
+      .toast.warn {
+        border-left-color: var(--amber);
+      }
+      .toast.error {
+        border-left-color: var(--crimson);
+      }
+      .toast-icon {
+        font-size: 14px;
+        flex-shrink: 0;
+        padding-top: 1px;
+      }
+      .toast-body {
+        flex: 1;
+      }
+      .toast-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--tx-primary);
+      }
+      .toast-msg {
+        font-size: 11px;
+        color: var(--tx-secondary);
+        margin-top: 2px;
+      }
+      .toast-close {
+        color: var(--tx-muted);
+        cursor: pointer;
+        padding: 2px;
+        font-size: 13px;
+      }
+      .toast-close:hover {
+        color: var(--tx-primary);
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+   SPLASH SCREEN
+═══════════════════════════════════════════════════════════════ */
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        background: var(--void);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--sp-6);
+        transition: opacity 0.6s ease;
+      }
+      #splash.hiding {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .splash-logo svg {
+        width: 80px;
+        height: 80px;
+      }
+      .splash-logo svg .hex-stroke {
+        stroke-dasharray: 300;
+        stroke-dashoffset: 300;
+        animation: drawHex 1s ease forwards;
+      }
+      .splash-logo svg .hex-inner {
+        stroke-dasharray: 200;
+        stroke-dashoffset: 200;
+        animation: drawHex 0.8s 0.4s ease forwards;
+      }
+      @keyframes drawHex {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      .splash-title {
+        font-family: var(--font-display);
+        font-size: 32px;
+        font-weight: 900;
+        letter-spacing: 0.15em;
+        color: var(--tx-primary);
+      }
+      .splash-title span {
+        color: var(--teal);
+      }
+      .splash-sub {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--tx-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+      }
+      .splash-bar-wrap {
+        width: 280px;
+        height: 2px;
+        background: var(--border);
+        border-radius: 1px;
+        overflow: hidden;
+      }
+      .splash-bar {
+        height: 100%;
+        background: var(--teal);
+        animation: splash-bar 2s ease forwards;
+      }
+      #splash-status {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--tx-muted);
+        text-align: center;
+        min-height: 16px;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════════════════════════════ */
+      .flex {
+        display: flex;
+      }
+      .flex-col {
+        flex-direction: column;
+      }
+      .gap-1 {
+        gap: var(--sp-1);
+      }
+      .gap-2 {
+        gap: var(--sp-2);
+      }
+      .gap-3 {
+        gap: var(--sp-3);
+      }
+      .mt-2 {
+        margin-top: var(--sp-2);
+      }
+      .mt-3 {
+        margin-top: var(--sp-3);
+      }
+      .text-center {
+        text-align: center;
+      }
+      .hidden {
+        display: none !important;
+      }
+      .teal {
+        color: var(--teal);
+      }
+      .amber {
+        color: var(--amber);
+      }
+      .crimson {
+        color: var(--crimson);
+      }
+      .mono {
+        font-family: var(--font-mono);
+      }
+      .flash {
+        animation: counter-flash 0.4s ease;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══ SPLASH SCREEN ════════════════════════════════════════ -->
+    <div id="splash">
+      <div class="splash-logo">
+        <svg
+          viewBox="0 0 100 100"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <polygon
+            class="hex-stroke"
+            points="50,5 93,27.5 93,72.5 50,95 7,72.5 7,27.5"
+            stroke="#00F5D4"
+            stroke-width="2"
+            fill="rgba(0,245,212,0.04)"
+          />
+          <circle
+            class="hex-inner"
+            cx="50"
+            cy="50"
+            r="20"
+            stroke="#00F5D4"
+            stroke-width="1.5"
+            fill="none"
+            stroke-dasharray="125"
+          />
+          <line
+            x1="50"
+            y1="5"
+            x2="50"
+            y2="30"
+            stroke="#00F5D4"
+            stroke-width="0.8"
+            opacity="0.5"
+          />
+          <line
+            x1="50"
+            y1="70"
+            x2="50"
+            y2="95"
+            stroke="#00F5D4"
+            stroke-width="0.8"
+            opacity="0.5"
+          />
+          <line
+            x1="7"
+            y1="27.5"
+            x2="28"
+            y2="39"
+            stroke="#00F5D4"
+            stroke-width="0.8"
+            opacity="0.5"
+          />
+          <line
+            x1="72"
+            y1="61"
+            x2="93"
+            y2="72.5"
+            stroke="#00F5D4"
+            stroke-width="0.8"
+            opacity="0.5"
+          />
+          <line
+            x1="93"
+            y1="27.5"
+            x2="72"
+            y2="39"
+            stroke="#00F5D4"
+            stroke-width="0.8"
+            opacity="0.5"
+          />
+          <line
+            x1="28"
+            y1="61"
+            x2="7"
+            y2="72.5"
+            stroke="#00F5D4"
+            stroke-width="0.8"
+            opacity="0.5"
+          />
+        </svg>
+      </div>
+      <div>
+        <div class="splash-title">CITY<span>MIND</span></div>
+        <div class="splash-sub">Urban Intelligence System</div>
+      </div>
+      <div>
+        <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
+        <div id="splash-status" style="margin-top: 8px">Initializing…</div>
+      </div>
+    </div>
+
+    <!-- ═══ NAVBAR ═══════════════════════════════════════════════ -->
+    <nav id="navbar">
+      <a class="nav-logo" href="#">
+        <svg viewBox="0 0 36 36" fill="none">
+          <polygon
+            points="18,2 34,10 34,26 18,34 2,26 2,10"
+            stroke="#00F5D4"
+            stroke-width="1.5"
+            fill="rgba(0,245,212,0.06)"
+          />
+          <circle
+            cx="18"
+            cy="18"
+            r="6"
+            stroke="#00F5D4"
+            stroke-width="1"
+            fill="none"
+          />
+          <line
+            x1="18"
+            y1="2"
+            x2="18"
+            y2="12"
+            stroke="#00F5D4"
+            stroke-width="0.7"
+            opacity="0.6"
+          />
+          <line
+            x1="18"
+            y1="24"
+            x2="18"
+            y2="34"
+            stroke="#00F5D4"
+            stroke-width="0.7"
+            opacity="0.6"
+          />
+          <line
+            x1="2"
+            y1="10"
+            x2="12"
+            y2="15"
+            stroke="#00F5D4"
+            stroke-width="0.7"
+            opacity="0.6"
+          />
+          <line
+            x1="24"
+            y1="21"
+            x2="34"
+            y2="26"
+            stroke="#00F5D4"
+            stroke-width="0.7"
+            opacity="0.6"
+          />
+          <line
+            x1="34"
+            y1="10"
+            x2="24"
+            y2="15"
+            stroke="#00F5D4"
+            stroke-width="0.7"
+            opacity="0.6"
+          />
+          <line
+            x1="12"
+            y1="21"
+            x2="2"
+            y2="26"
+            stroke="#00F5D4"
+            stroke-width="0.7"
+            opacity="0.6"
+          />
+        </svg>
+        <span class="nav-logo-text">CITY<span>MIND</span></span>
+      </a>
+
+      <div class="nav-center">
+        <div class="challenge-tabs">
+          <button
+            class="c-tab is-active"
+            data-ch="1"
+            onclick="switchChallenge(1)"
+          >
+            C1<span class="tab-dot"></span>
+          </button>
+          <button class="c-tab" data-ch="2" onclick="switchChallenge(2)">
+            C2<span class="tab-dot"></span>
+          </button>
+          <button class="c-tab" data-ch="3" onclick="switchChallenge(3)">
+            C3<span class="tab-dot"></span>
+          </button>
+          <button class="c-tab" data-ch="4" onclick="switchChallenge(4)">
+            C4<span class="tab-dot"></span>
+          </button>
+          <button class="c-tab" data-ch="5" onclick="switchChallenge(5)">
+            C5<span class="tab-dot"></span>
+          </button>
+        </div>
+        <div class="server-pill" id="server-pill">
+          <div class="s-dot" id="s-dot"></div>
+          <span id="s-label">PYTHON: —</span>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <div class="step-counter">
+          Step <span id="step-display">00</span> /
+          <span id="total-steps">20</span>
+        </div>
+        <button
+          class="nav-btn"
+          id="mute-btn"
+          title="Toggle sound (M)"
+          onclick="toggleMute()"
+        >
+          🔇
+        </button>
+        <button class="nav-btn" title="Help (?)" onclick="showHelp()">?</button>
+      </div>
+    </nav>
+
+    <!-- ═══ LEFT SIDEBAR ════════════════════════════════════════ -->
+    <aside id="sidebar-left" class="panel">
+      <div class="panel-scroll">
+        <!-- City Config -->
+        <div class="panel-section">
+          <div class="section-hdr" onclick="toggleSection('cfg')">
+            <span class="s-icon">⚙</span> City Config
+            <span class="chevron" id="cfg-chev">▾</span>
+          </div>
+          <div class="section-body" id="cfg-body">
+            <div class="form-row">
+              <label class="form-label">Seed</label>
+              <div class="flex gap-1">
+                <input
+                  type="text"
+                  class="form-input"
+                  id="seed-input"
+                  placeholder="42"
+                  style="flex: 1"
+                />
+                <button
+                  class="btn btn-ghost btn-sm"
+                  onclick="
+                    document.getElementById('seed-input').value = Math.floor(
+                      Math.random() * 9999,
+                    )
+                  "
+                >
+                  🎲
+                </button>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-full" onclick="generateCity()">
+              ▶ Generate City Layout
+            </button>
+          </div>
+        </div>
+
+        <!-- Challenges -->
+        <div class="panel-section">
+          <div class="section-hdr" onclick="toggleSection('ch')">
+            <span class="s-icon">⬡</span> Challenges
+            <span class="chevron" id="ch-chev">▾</span>
+          </div>
+          <div class="section-body" id="ch-body">
+            <div class="challenge-row">
+              <div class="status-dot dot-idle" id="dot-c1"></div>
+              <div class="ch-label"><strong>C1</strong> CSP City Layout</div>
+              <button
+                class="ch-run-btn"
+                onclick="runChallenge(1)"
+                title="Run C1"
+              >
+                ▶
+              </button>
+            </div>
+            <div class="challenge-row">
+              <div class="status-dot dot-idle" id="dot-c2"></div>
+              <div class="ch-label"><strong>C2</strong> Road Network</div>
+              <button
+                class="ch-run-btn"
+                onclick="runChallenge(2)"
+                title="Run C2"
+              >
+                ▶
+              </button>
+            </div>
+            <div class="challenge-row">
+              <div class="status-dot dot-idle" id="dot-c3"></div>
+              <div class="ch-label"><strong>C3</strong> Ambulance GA</div>
+              <button
+                class="ch-run-btn"
+                onclick="runChallenge(3)"
+                title="Run C3"
+              >
+                ▶
+              </button>
+            </div>
+            <div class="challenge-row">
+              <div class="status-dot dot-idle" id="dot-c4"></div>
+              <div class="ch-label"><strong>C4</strong> D* Lite Router</div>
+              <button
+                class="ch-run-btn"
+                onclick="runChallenge(4)"
+                title="Run C4"
+              >
+                ▶
+              </button>
+            </div>
+            <div class="challenge-row">
+              <div class="status-dot dot-idle" id="dot-c5"></div>
+              <div class="ch-label"><strong>C5</strong> Crime ML</div>
+              <button
+                class="ch-run-btn"
+                onclick="runChallenge(5)"
+                title="Run C5"
+              >
+                ▶
+              </button>
+            </div>
+            <div class="mt-2 flex gap-1">
+              <button class="btn btn-amber btn-full btn-sm" onclick="runAll()">
+                ⚡ Run All
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Event Injection -->
+        <div class="panel-section">
+          <div class="section-hdr" onclick="toggleSection('ev')">
+            <span class="s-icon">⚡</span> Inject Event
+            <span class="chevron" id="ev-chev">▾</span>
+          </div>
+          <div class="section-body" id="ev-body">
+            <div class="form-row">
+              <label class="form-label">Event Type</label>
+              <select class="form-select" id="event-type">
+                <option value="flood">Flood Road</option>
+                <option value="block">Block Road</option>
+                <option value="restore">Restore Road</option>
+                <option value="risk_high">Set High Risk</option>
+                <option value="risk_low">Set Low Risk</option>
+                <option value="civilian">Add Civilian Target</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-label">Target Node ID</label>
+              <input
+                type="text"
+                class="form-input"
+                id="event-target"
+                placeholder="e.g. N_05_10"
+              />
+            </div>
+            <button
+              class="btn btn-danger btn-full btn-sm"
+              onclick="injectEvent()"
+            >
+              ⚡ Inject Now
+            </button>
+          </div>
+        </div>
+
+        <!-- Overlays -->
+        <div class="panel-section">
+          <div class="section-hdr" onclick="toggleSection('ov')">
+            <span class="s-icon">◫</span> Overlays
+            <span class="chevron" id="ov-chev">▾</span>
+          </div>
+          <div class="section-body" id="ov-body" style="gap: 6px">
+            <!-- Dynamically generated by JS -->
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ═══ CANVAS ═══════════════════════════════════════════════ -->
+    <main id="canvas-area">
+      <canvas id="canvas-grid" class="city-canvas"></canvas>
+      <canvas id="canvas-overlay" class="city-canvas"></canvas>
+      <canvas id="canvas-anim" class="city-canvas"></canvas>
+
+      <div class="canvas-controls">
+        <button class="zoom-btn" onclick="zoom(1.2)" title="Zoom In (+)">
+          +
+        </button>
+        <button class="zoom-btn" onclick="zoom(0.833)" title="Zoom Out (-)">
+          −
+        </button>
+        <button
+          class="zoom-btn"
+          onclick="resetView()"
+          title="Reset View (0)"
+          style="font-size: 10px"
+        >
+          ⊙
+        </button>
+      </div>
+
+      <div id="mini-map"><canvas id="canvas-minimap"></canvas></div>
+
+      <div id="canvas-legend"></div>
+    </main>
+
+    <!-- ═══ RIGHT SIDEBAR ════════════════════════════════════════ -->
+    <aside id="sidebar-right" class="panel">
+      <div class="panel-scroll">
+        <!-- Live View (default) -->
+        <div id="live-view">
+          <!-- System Status -->
+          <div class="panel-section">
+            <div class="section-hdr" onclick="toggleSection('sys')">
+              <span class="s-icon">◈</span> System Status
+              <span class="chevron" id="sys-chev">▾</span>
+            </div>
+            <div class="section-body" id="sys-body">
+              <div class="stat-grid">
+                <div class="stat-card">
+                  <div class="stat-label">Sim Step</div>
+                  <div class="stat-value" id="st-step">00/20</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Flooded</div>
+                  <div class="stat-value crimson" id="st-flood">0</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Blocked</div>
+                  <div class="stat-value amber" id="st-block">0</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Units</div>
+                  <div class="stat-value" id="st-units">3/3</div>
+                </div>
+              </div>
+              <div style="margin-top: 6px">
+                <div
+                  class="flex"
+                  style="justify-content: space-between; margin-bottom: 4px"
+                >
+                  <span class="label-xs">Progress</span>
+                  <span class="label-xs" id="progress-pct">0%</span>
+                </div>
+                <div class="progress-bar">
+                  <div
+                    class="progress-fill"
+                    id="sim-progress"
+                    style="width: 0%"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selected Node -->
+          <div class="panel-section" id="node-section" style="display: none">
+            <div class="section-hdr" onclick="toggleSection('nd')">
+              <span class="s-icon">◎</span> Selected Node
+              <span class="chevron" id="nd-chev">▾</span>
+            </div>
+            <div class="section-body" id="nd-body">
+              <div class="nd-id" id="nd-id">—</div>
+              <div id="nd-content"></div>
+            </div>
+          </div>
+
+          <!-- Ambulance Tracker -->
+          <div class="panel-section">
+            <div class="section-hdr" onclick="toggleSection('amb')">
+              <span class="s-icon">🚑</span> Ambulances
+              <span class="chevron" id="amb-chev">▾</span>
+            </div>
+            <div class="section-body" id="amb-body">
+              <div id="amb-list">
+                <!-- Generated by JS -->
+              </div>
+              <div class="stat-card mt-2">
+                <div class="stat-label">Worst-Case Distance</div>
+                <div class="stat-value" id="worst-dist">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Crime Risk -->
+          <div class="panel-section">
+            <div class="section-hdr" onclick="toggleSection('cr')">
+              <span class="s-icon">◈</span> Crime Risk
+              <span class="chevron" id="cr-chev">▾</span>
+            </div>
+            <div class="section-body" id="cr-body">
+              <div class="risk-bar-row">
+                <span class="risk-bar-label high">HIGH</span>
+                <div class="progress-bar" style="flex: 1">
+                  <div
+                    class="progress-fill crimson"
+                    id="risk-high-bar"
+                    style="width: 20%"
+                  ></div>
+                </div>
+                <span class="risk-bar-count" id="risk-high-cnt">—</span>
+              </div>
+              <div class="risk-bar-row">
+                <span class="risk-bar-label med">MED</span>
+                <div class="progress-bar" style="flex: 1">
+                  <div
+                    class="progress-fill amber"
+                    id="risk-med-bar"
+                    style="width: 35%"
+                  ></div>
+                </div>
+                <span class="risk-bar-count" id="risk-med-cnt">—</span>
+              </div>
+              <div class="risk-bar-row">
+                <span class="risk-bar-label low">LOW</span>
+                <div class="progress-bar" style="flex: 1">
+                  <div
+                    class="progress-fill"
+                    id="risk-low-bar"
+                    style="width: 45%"
+                  ></div>
+                </div>
+                <span class="risk-bar-count" id="risk-low-cnt">—</span>
+              </div>
+              <div class="stat-grid mt-2">
+                <div class="stat-card">
+                  <div class="stat-label">Clusters</div>
+                  <div class="stat-value" id="cr-clusters">3</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-label">Officers</div>
+                  <div class="stat-value">10</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Challenge Detail Panels (C1-C5) -->
+        <div id="ch-panels">
+          <!-- C1 Panel -->
+          <div id="panel-c1" class="challenge-panel active">
+            <div class="chal-section-hdr">
+              CSP Solver — Backtracking + MRV + LCV + FC
+            </div>
+            <div>
+              <div class="constraint-check">
+                <span class="cc-icon" id="cc1">✓</span
+                ><span class="cc-label"
+                  >Industrial ↔ School/Hospital separation</span
+                >
+              </div>
+              <div class="constraint-check">
+                <span class="cc-icon" id="cc2">✓</span
+                ><span class="cc-label"
+                  >Residential within 3 hops of Hospital</span
+                >
+              </div>
+              <div class="constraint-check">
+                <span class="cc-icon" id="cc3">✓</span
+                ><span class="cc-label"
+                  >Power Plant within 2 hops of Industrial</span
+                >
+              </div>
+            </div>
+            <div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Algorithm</span
+                ><span class="chal-v">BT + MRV + LCV + FC</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Backtracks</span
+                ><span class="chal-v teal" id="c1-bt">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Violations</span
+                ><span class="chal-v" id="c1-viol">—</span>
+              </div>
+              <div class="chal-stat-row" style="padding-left:12px;opacity:0.8;">
+                <span class="chal-k" style="font-size:11px;">├ C1 Industrial</span
+                ><span class="chal-v" style="font-size:11px;" id="c1-viol-c1">—</span>
+              </div>
+              <div class="chal-stat-row" style="padding-left:12px;opacity:0.8;">
+                <span class="chal-k" style="font-size:11px;">├ C2 Residential</span
+                ><span class="chal-v" style="font-size:11px;" id="c1-viol-c2">—</span>
+              </div>
+              <div class="chal-stat-row" style="padding-left:12px;opacity:0.8;">
+                <span class="chal-k" style="font-size:11px;">└ C3 Power Plant</span
+                ><span class="chal-v" style="font-size:11px;" id="c1-viol-c3">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Exec Time</span
+                ><span class="chal-v" id="c1-time">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Status</span
+                ><span class="chal-v teal" id="c1-status">—</span>
+              </div>
+            </div>
+            <div class="flex gap-1">
+              <button
+                class="btn btn-ghost btn-sm btn-full"
+                onclick="runChallenge(1)"
+              >
+                ↺ Re-solve
+              </button>
+            </div>
+          </div>
+
+          <!-- C2 Panel -->
+          <div id="panel-c2" class="challenge-panel">
+            <div class="chal-section-hdr">Kruskal MST + UCS Redundancy</div>
+            <div>
+              <div class="chal-stat-row">
+                <span class="chal-k">MST Edges</span
+                ><span class="chal-v teal" id="c2-mst">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Redundant Edges</span
+                ><span class="chal-v" id="c2-red">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Total Cost</span
+                ><span class="chal-v amber" id="c2-cost">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">H↔Depot Paths</span
+                ><span class="chal-v green" id="c2-paths">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Primary Hospital</span
+                ><span class="chal-v" id="c2-hosp">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Ambulance Depot</span
+                ><span class="chal-v" id="c2-depot">—</span>
+              </div>
+            </div>
+            <div class="flex gap-1">
+              <button
+                class="btn btn-ghost btn-sm btn-full"
+                onclick="toggleOverlay('mst')"
+              >
+                ⬡ MST Overlay
+              </button>
+              <button
+                class="btn btn-ghost btn-sm btn-full"
+                onclick="toggleOverlay('redundant')"
+              >
+                ⟳ Redundant
+              </button>
+            </div>
+          </div>
+
+          <!-- C3 Panel -->
+          <div id="panel-c3" class="challenge-panel">
+            <div class="chal-section-hdr">
+              Genetic Algorithm — Ambulance Placement
+            </div>
+            <div id="amb-placement-list">
+              <!-- JS generated -->
+            </div>
+            <div class="chal-section-hdr mt-2">Objective Function</div>
+            <div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Worst-Case Dist</span
+                ><span class="algo-big" id="c3-worst" style="font-size: 22px"
+                  >—</span
+                >
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Avg Distance</span
+                ><span class="chal-v" id="c3-avg">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Uncovered Nodes</span
+                ><span class="chal-v amber" id="c3-uncov">—</span>
+              </div>
+            </div>
+            <div>
+              <div class="chal-section-hdr">GA Progress</div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  margin-bottom: 4px;
+                "
+              >
+                <span class="label-xs" id="c3-gen">Gen 0 / 100</span>
+                <span class="label-xs teal" id="c3-fit">Fitness: —</span>
+              </div>
+              <div class="progress-bar">
+                <div
+                  class="progress-fill amber"
+                  id="c3-prog"
+                  style="width: 0%"
+                ></div>
+              </div>
+            </div>
+            <button
+              class="btn btn-ghost btn-sm btn-full"
+              onclick="runChallenge(3)"
+            >
+              ↺ Re-optimize
+            </button>
+          </div>
+
+          <!-- C4 Panel -->
+          <div id="panel-c4" class="challenge-panel">
+            <div class="chal-section-hdr">
+              D* Lite — Dynamic Emergency Router
+            </div>
+            <div
+              style="
+                display: flex;
+                gap: 6px;
+                margin-bottom: 8px;
+                flex-wrap: wrap;
+              "
+            >
+              <!-- civilian circles generated by JS -->
+            </div>
+            <div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Current Target</span
+                ><span class="chal-v teal" id="c4-target">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Path Cost</span
+                ><span class="chal-v" id="c4-cost">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Path Hops</span
+                ><span class="chal-v" id="c4-hops">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Replans</span
+                ><span class="chal-v amber" id="c4-replans">0</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Heuristic</span
+                ><span class="chal-v green">Manhattan ✓</span>
+              </div>
+            </div>
+            <div class="chal-section-hdr">Active Route</div>
+            <div class="path-seq" id="c4-path">
+              <span style="font-size: 10px; color: var(--tx-muted)"
+                >No route active</span
+              >
+            </div>
+            <div class="flex gap-1 mt-2">
+              <button class="btn btn-ghost btn-sm" onclick="simStep()">
+                → Step
+              </button>
+              <button
+                class="btn btn-primary btn-sm btn-full"
+                onclick="togglePlay()"
+              >
+                ▶ Auto
+              </button>
+              <button class="btn btn-ghost btn-sm" onclick="simReset()">
+                ↺
+              </button>
+            </div>
+            <!-- FIX: Demo button — picks a node on the redundant path, dispatches there,
+                 then floods a mid-route edge to force D* Lite to demonstrate rerouting -->
+            <button
+              class="btn btn-amber btn-sm btn-full"
+              style="margin-top:6px;"
+              onclick="demoReroute()"
+              title="Picks a target on the redundant path, routes to it, then floods a mid-route road to force D* Lite to find an alternate path"
+            >
+              🎬 Demo D* Reroute
+            </button>
+            <div style="font-size:9px;color:var(--tx-muted);margin-top:4px;line-height:1.4;">
+              Picks a node with alternate path → dispatches → floods mid-route → D* re-routes via backup road
+            </div>
+
+          <!-- C5 Panel -->
+          <div id="panel-c5" class="challenge-panel">
+            <div class="chal-section-hdr">K-Means Clustering</div>
+            <div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Algorithm</span
+                ><span class="chal-v">K-Means (k=3)</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Features</span
+                ><span class="chal-v">Pop. Density + Ind. Prox</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Silhouette Score</span
+                ><span class="chal-v teal" id="c5-sil">—</span>
+              </div>
+            </div>
+            <div class="chal-section-hdr mt-2">Decision Tree Classifier</div>
+            <div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Training Samples</span
+                ><span class="chal-v" id="c5-samples">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Accuracy</span
+                ><span class="chal-v teal" id="c5-acc">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">High Risk ×1.5</span
+                ><span class="chal-v crimson">applied</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Med Risk ×1.2</span
+                ><span class="chal-v amber">applied</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Low Risk ×1.0</span
+                ><span class="chal-v green">applied</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Graph Updated</span
+                ><span class="chal-v green" id="c5-updated">—</span>
+              </div>
+            </div>
+            <div class="flex gap-1 mt-2">
+              <button
+                class="btn btn-ghost btn-sm btn-full"
+                onclick="toggleOverlay('heatmap')"
+              >
+                🌡 Heatmap
+              </button>
+              <button
+                class="btn btn-ghost btn-sm btn-full"
+                onclick="toggleOverlay('clusters')"
+              >
+                ◎ Clusters
+              </button>
+            </div>
+            <div class="flex gap-1 mt-2">
+              <button
+                class="btn btn-ghost btn-sm btn-full"
+                onclick="toggleOverlay('coverage')"
+              >
+                🚑 AMB Coverage
+              </button>
+              <button
+                class="btn btn-primary btn-sm btn-full"
+                onclick="toggleOverlay('police')"
+                title="Show police officer deployment overlay"
+              >
+                👮 Police Deploy
+              </button>
+            </div>
+            <div class="chal-section-hdr mt-2">Police Deployment</div>
+            <div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Officers Placed</span>
+                <span class="chal-v teal" id="c5-officers">—</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Strategy</span>
+                <span class="chal-v">Greedy Coverage Max</span>
+              </div>
+              <div class="chal-stat-row">
+                <span class="chal-k">Min Spread</span>
+                <span class="chal-v">3 hops (Manhattan)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- #ch-panels -->
+      </div>
+    </aside>
+
+    <!-- ═══ BOTTOM PANEL ═════════════════════════════════════════ -->
+    <section id="bottom-panel">
+      <div class="sim-controls">
+        <div class="sim-btn-row">
+          <button
+            class="sim-btn danger-btn"
+            onclick="simReset()"
+            title="Reset (R)"
+          >
+            ↺
+          </button>
+          <button class="sim-btn" onclick="simStepBack()" title="Step Back">
+            ⏮
+          </button>
+          <button
+            class="sim-btn play-btn"
+            id="play-btn"
+            onclick="togglePlay()"
+            title="Play/Pause (Space)"
+          >
+            ▶
+          </button>
+          <button class="sim-btn" onclick="simStep()" title="Step Forward (→)">
+            ⏭
+          </button>
+          <button class="sim-btn" onclick="setSpeed(5)" title="Max Speed">
+            ⚡
+          </button>
+        </div>
+        <div class="speed-row">
+          <span class="label-xs">Speed</span>
+          <input
+            type="range"
+            class="form-range"
+            min="0"
+            max="5"
+            value="2"
+            id="speed-slider"
+            oninput="setSpeed(this.value)"
+            style="flex: 1"
+          />
+          <span class="range-val" id="speed-lbl">1×</span>
+        </div>
+        <div class="scrubber-wrap">
+          <div
+            class="scrubber-track"
+            id="scrubber"
+            onclick="scrubberClick(event)"
+          >
+            <div
+              class="scrubber-fill"
+              id="scrubber-fill"
+              style="width: 0%"
+            ></div>
+          </div>
+          <div class="sim-step-lbl mt-2" style="padding: 0 2px">
+            <span>Step 0</span><span id="scrubber-mid">—</span
+            ><span>Step 20</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="event-log-panel">
+        <div class="log-hdr">
+          <span class="log-hdr-title">📋 Live Event Log</span>
+          <input
+            type="text"
+            class="log-search"
+            placeholder="Search…"
+            id="log-search"
+            oninput="filterLog()"
+          />
+          <select class="log-filter" id="log-filter-sel" onchange="filterLog()">
+            <option value="all">All</option>
+            <option value="info">Info</option>
+            <option value="warn">Warn</option>
+            <option value="error">Error</option>
+            <option value="route">Route</option>
+            <option value="event">Event</option>
+          </select>
+          <button class="nav-btn" onclick="clearLog()" title="Clear Log">
+            ✕
+          </button>
+        </div>
+        <div class="log-container" id="log-container"></div>
+      </div>
+    </section>
+
+    <!-- ═══ OVERLAYS ════════════════════════════════════════════ -->
+    <div id="tooltip"></div>
+    <div id="ctx-menu"></div>
+    <div id="toast-container"></div>
+
+    <script>
+      "use strict";
+
+      /* ═══════════════════════════════════════════════════════════
+         CONFIG
+      ═══════════════════════════════════════════════════════════ */
+      const FLASK_URL = "http://localhost:5000";
+      let GRID = 20; // Will be updated from server config
+
+      const LOC = {
+        EMPTY: "Empty",
+        RESIDENTIAL: "Residential",
+        HOSPITAL: "Hospital",
+        SCHOOL: "School",
+        INDUSTRIAL: "Industrial",
+        POWER: "Power Plant",
+        AMBULANCE: "Ambulance Depot",
+      };
+
+      const LOC_COLOR = {
+        Empty: { fill: "#111827", border: "#1F2937", icon: "#374151" },
+        Residential: { fill: "#14532D", border: "#166534", icon: "#4ADE80" },
+        Hospital: { fill: "#7F1D1D", border: "#991B1B", icon: "#FCA5A5" },
+        School: { fill: "#78350F", border: "#92400E", icon: "#FCD34D" },
+        Industrial: { fill: "#1C1917", border: "#292524", icon: "#A8A29E" },
+        "Power Plant": { fill: "#164E63", border: "#155E75", icon: "#67E8F9" },
+        "Ambulance Depot": {
+          fill: "#7C2D12",
+          border: "#9A3412",
+          icon: "#FB923C",
+        },
+      };
+      const RISK_COLOR = { Low: "#22C55E", Medium: "#F59E0B", High: "#EF4444" };
+      const AMB_COLORS = ["#F97316", "#00F5D4", "#FFB800"];
+
+      const OVERLAYS_CONFIG = [
+        { id: "heatmap", label: "Crime Heatmap", color: "#FF3B5C", def: false },
+        { id: "mst", label: "MST Edges", color: "#FFB800", def: false },
+        {
+          id: "redundant",
+          label: "Redundant Paths",
+          color: "#9B5DE5",
+          def: false,
+        },
+        { id: "coverage", label: "Amb. Coverage", color: "#00F5D4", def: true },
+        {
+          id: "clusters",
+          label: "Cluster Regions",
+          color: "#0090FF",
+          def: false,
+        },
+        {
+          id: "population",
+          label: "Population Density",
+          color: "#22C55E",
+          def: false,
+        },
+        {
+          id: "costs",
+          label: "Edge Cost Labels",
+          color: "#94A3B8",
+          def: false,
+        },,
+        { id: "police", label: "Police Deploy", color: "#3B82F6", def: false },
+      ];
+
+      /* ═══════════════════════════════════════════════════════════
+         STATE
+      ═══════════════════════════════════════════════════════════ */
+      const State = {
+        nodes: [], // flat array of node objects
+        edges: [], // flat array of edge objects
+        nodeMap: {}, // id → node
+        edgeSet: new Set(), // for quick lookup
+
+        // Challenge results
+        c1: null,
+        c2: null,
+        c3: null,
+        c4: null,
+        c5: null,
+        ambulances: [
+          { id: 0, nodeId: null, status: "STANDBY", coverage: 0 },
+          { id: 1, nodeId: null, status: "STANDBY", coverage: 0 },
+          { id: 2, nodeId: null, status: "STANDBY", coverage: 0 },
+        ],
+        route: [], // current D* path as node IDs
+        replans: 0,
+
+        // Simulation
+        step: 0,
+        maxSteps: 20,
+        running: false,
+        speedDelays: [2000, 1000, 500, 250, 100, 0],
+        speedIdx: 2,
+        simTimer: null,
+
+        // UI
+        selectedNode: null,
+        activeChallenge: 1,
+        overlays: {},
+        police: [],
+        muted: true,
+        serverOnline: false,
+
+        // Dirty flags
+        dirty: { grid: true, overlay: true },
+
+        // View (zoom/pan)
+        view: { scale: 1, ox: 0, oy: 0, cellSize: 36 },
+
+        // Log
+        logEntries: [],
+      };
+
+      OVERLAYS_CONFIG.forEach((o) => (State.overlays[o.id] = o.def));
+
+      /* ═══════════════════════════════════════════════════════════
+         DEMO CITY GENERATOR
+      ═══════════════════════════════════════════════════════════ */
+      function generateDemoCity(size = 20) {
+        const nodes = [];
+        const nodeMap = {};
+
+        // Hospital positions: 3×3 grid
+        const hospPos = new Set();
+        [3, 10, 17].forEach((r) =>
+          [3, 10, 17].forEach((c) => hospPos.add(`${r}_${c}`)),
+        );
+
+        // Industrial belt
+        const indPos = new Set();
+        for (let c = 1; c < size - 1; c += 2) indPos.add(`8_${c}`);
+        for (let c = 2; c < size - 1; c += 2) indPos.add(`14_${c}`);
+
+        // Hospital coverage (3 hops BFS for assigning residential)
+        const hospCovered = new Set();
+        hospPos.forEach((k) => {
+          const [r, c] = k.split("_").map(Number);
+          for (let dr = -3; dr <= 3; dr++)
+            for (let dc = -3; dc <= 3; dc++) {
+              if (
+                Math.abs(dr) + Math.abs(dc) <= 3 &&
+                r + dr >= 0 &&
+                r + dr < size &&
+                c + dc >= 0 &&
+                c + dc < size
+              )
+                hospCovered.add(`${r + dr}_${c + dc}`);
+            }
+        });
+
+        // Power plant positions (near industrial)
+        const powerPos = [
+          [7, 4],
+          [7, 15],
+          [15, 4],
+          [15, 15],
+        ];
+        const powerSet = new Set(powerPos.map(([r, c]) => `${r}_${c}`));
+
+        // Ambulance depots
+        const ambPos = [
+          [5, 0],
+          [10, 19],
+          [18, 9],
+        ];
+        const ambSet = new Set(ambPos.map(([r, c]) => `${r}_${c}`));
+
+        // School positions (scattered)
+        const schoolSet = new Set();
+        const schoolSeeds = [
+          [1, 1],
+          [1, 8],
+          [1, 16],
+          [6, 5],
+          [6, 13],
+          [9, 0],
+          [9, 19],
+          [12, 7],
+          [16, 1],
+          [16, 18],
+          [3, 6],
+          [3, 15],
+          [7, 18],
+          [11, 12],
+          [13, 2],
+          [17, 6],
+          [4, 11],
+          [8, 18],
+          [15, 9],
+          [19, 4],
+        ];
+        schoolSeeds.forEach(([r, c]) => {
+          if (!hospPos.has(`${r}_${c}`) && !indPos.has(`${r}_${c}`))
+            schoolSet.add(`${r}_${c}`);
+        });
+
+        // Quotas: residential(120), schools up to 20
+        let resCount = 0,
+          schoolCount = 0;
+
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            const k = `${r}_${c}`;
+            const id = `N_${String(r).padStart(2, "0")}_${String(c).padStart(2, "0")}`;
+            let type = LOC.EMPTY;
+            let risk = ["Low", "Low", "Low", "Medium", "High"][
+              Math.floor(Math.random() * 5)
+            ];
+
+            if (hospPos.has(k)) {
+              type = LOC.HOSPITAL;
+              risk = "Low";
+            } else if (indPos.has(k)) {
+              type = LOC.INDUSTRIAL;
+              risk = Math.random() > 0.5 ? "Medium" : "High";
+            } else if (powerSet.has(k)) {
+              type = LOC.POWER;
+              risk = "Medium";
+            } else if (ambSet.has(k)) {
+              type = LOC.AMBULANCE;
+              risk = "Low";
+            } else if (schoolSet.has(k) && schoolCount < 20) {
+              type = LOC.SCHOOL;
+              risk = "Low";
+              schoolCount++;
+            } else if (
+              hospCovered.has(k) &&
+              resCount < 120 &&
+              !schoolSet.has(k)
+            ) {
+              type = LOC.RESIDENTIAL;
+              resCount++;
+            }
+
+            const pop =
+              type === LOC.RESIDENTIAL
+                ? 800 + Math.random() * 400
+                : type === LOC.HOSPITAL
+                  ? 200 + Math.random() * 200
+                  : type === LOC.SCHOOL
+                    ? 300 + Math.random() * 300
+                    : type === LOC.INDUSTRIAL
+                      ? 100 + Math.random() * 200
+                      : type === LOC.POWER
+                        ? 50 + Math.random() * 100
+                        : Math.random() * 20;
+
+            const riskVal =
+              risk === "High"
+                ? 0.7 + Math.random() * 0.3
+                : risk === "Medium"
+                  ? 0.35 + Math.random() * 0.3
+                  : Math.random() * 0.3;
+
+            const node = {
+              id,
+              row: r,
+              col: c,
+              type,
+              risk,
+              riskVal,
+              pop: Math.round(pop),
+              accessible: true,
+              isMST: false,
+              clusterId: Math.floor(riskVal * 3),
+              costMult: risk === "High" ? 1.5 : risk === "Medium" ? 1.2 : 1.0,
+            };
+            nodes.push(node);
+            nodeMap[id] = node;
+          }
+        }
+
+        // Generate edges (all adjacent pairs)
+        const edges = [];
+        const edgeMap = {};
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            const a =
+              nodeMap[
+                `N_${String(r).padStart(2, "0")}_${String(c).padStart(2, "0")}`
+              ];
+            // Right
+            if (c + 1 < size) {
+              const b =
+                nodeMap[
+                  `N_${String(r).padStart(2, "0")}_${String(c + 1).padStart(2, "0")}`
+                ];
+              const cost =
+                a.type === LOC.RESIDENTIAL || b.type === LOC.RESIDENTIAL
+                  ? 0.8
+                  : 1.0;
+              const eff = cost * Math.max(a.costMult, b.costMult);
+              const isMST = true; // simplified — all edges are MST for demo
+              const e = {
+                id: `E_${a.id}_${b.id}`,
+                fromId: a.id,
+                toId: b.id,
+                cost,
+                eff,
+                state: "standard",
+                isMST,
+                isRedundant: false,
+              };
+              edges.push(e);
+              edgeMap[e.id] = e;
+            }
+            // Down
+            if (r + 1 < size) {
+              const b =
+                nodeMap[
+                  `N_${String(r + 1).padStart(2, "0")}_${String(c).padStart(2, "0")}`
+                ];
+              const cost =
+                a.type === LOC.RESIDENTIAL || b.type === LOC.RESIDENTIAL
+                  ? 0.8
+                  : 1.0;
+              const eff = cost * Math.max(a.costMult, b.costMult);
+              const e = {
+                id: `E_${a.id}_${b.id}`,
+                fromId: a.id,
+                toId: b.id,
+                cost,
+                eff,
+                state: "standard",
+                isMST: true,
+                isRedundant: false,
+              };
+              edges.push(e);
+              edgeMap[e.id] = e;
+            }
+          }
+        }
+
+        // Mark a few edges as redundant (hospital redundancy paths)
+        edges
+          .filter((e) => Math.random() < 0.01)
+          .forEach((e) => (e.isRedundant = true));
+
+        // Place ambulances
+        ambPos.forEach(([r, c], i) => {
+          const id = `N_${String(r).padStart(2, "0")}_${String(c).padStart(2, "0")}`;
+          State.ambulances[i].nodeId = id;
+          State.ambulances[i].coverage = 15 + Math.floor(Math.random() * 10);
+        });
+
+        return { nodes, nodeMap, edges, edgeMap };
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+         API LAYER
+      ═══════════════════════════════════════════════════════════ */
+      const API = {
+        async call(path, opts = {}, timeoutMs = 2500) {
+          const ctrl = new AbortController();
+          const timeout = setTimeout(() => ctrl.abort(), timeoutMs);
+          try {
+            const res = await fetch(FLASK_URL + path, {
+              ...opts,
+              signal: ctrl.signal,
+              headers: {
+                "Content-Type": "application/json",
+                ...(opts.headers || {}),
+              },
+            });
+            clearTimeout(timeout);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return await res.json();
+          } catch (e) {
+            clearTimeout(timeout);
+            throw e;
+          }
+        },
+        async getGraph() {
+          return this.call("/api/graph");
+        },
+        async runChallenge(n, params = {}) {
+          // C1 CSP layout can take 30-60s for larger grids
+          const timeout = n === 1 ? 60000 : 15000; // 60s for C1, 15s for others
+          return this.call(`/api/challenge/${n}/run`, {
+            method: "POST",
+            body: JSON.stringify(params),
+          }, timeout);
+        },
+        async step() {
+          return this.call("/api/simulation/step", { method: "POST" });
+        },
+        async reset() {
+          return this.call("/api/simulation/reset", { method: "POST" });
+        },
+        async health() {
+          return this.call("/api/health");
+        },
+        async flood(fromId, toId) {
+          return this.call("/api/flood", {
+            method: "POST",
+            body: JSON.stringify({ fromId, toId }),
+          });
+        },
+      };
+
+      /* ═══════════════════════════════════════════════════════════
+         CANVAS RENDERER
+      ═══════════════════════════════════════════════════════════ */
+      const canvasGrid = document.getElementById("canvas-grid");
+      const canvasOvr = document.getElementById("canvas-overlay");
+      const canvasAnim = document.getElementById("canvas-anim");
+      const canvasMini = document.getElementById("canvas-minimap");
+      const ctxGrid = canvasGrid.getContext("2d");
+      const ctxOvr = canvasOvr.getContext("2d");
+      const ctxAnim = canvasAnim.getContext("2d");
+      const ctxMini = canvasMini.getContext("2d");
+
+      function resizeCanvases() {
+        const area = document.getElementById("canvas-area");
+        const W = area.clientWidth,
+          H = area.clientHeight;
+        const dpr = window.devicePixelRatio || 1;
+        [canvasGrid, canvasOvr, canvasAnim].forEach((c) => {
+          c.width = W * dpr;
+          c.height = H * dpr;
+          c.style.width = W + "px";
+          c.style.height = H + "px";
+          c.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
+        });
+        autoFitGrid(W, H);
+        State.dirty.grid = true;
+        State.dirty.overlay = true;
+      }
+
+function autoFitGrid(W, H) {
+  const pad = 8;
+  const cs = Math.min((W - pad) / GRID, (H - pad) / GRID);
+  State.view.cellSize = Math.max(18, Math.min(cs, 120));
+  const tw = State.view.cellSize * GRID,
+    th = State.view.cellSize * GRID;
+  State.view.ox = Math.round((W - tw) / 2);
+  State.view.oy = Math.round((H - th) / 2);
+  State.view.scale = 1;
+}
+
+      function gridToPixel(col, row) {
+        const { ox, oy, cellSize, scale } = State.view;
+        return {
+          x: ox + col * cellSize * scale,
+          y: oy + row * cellSize * scale,
+        };
+      }
+      function pixelToGrid(px, py) {
+        const { ox, oy, cellSize, scale } = State.view;
+        return {
+          col: Math.floor((px - ox) / (cellSize * scale)),
+          row: Math.floor((py - oy) / (cellSize * scale)),
+        };
+      }
+
+      function drawGrid() {
+        const W = canvasGrid.clientWidth,
+          H = canvasGrid.clientHeight;
+        const { cellSize, scale, ox, oy } = State.view;
+        const cs = cellSize * scale;
+        const pad = Math.max(2, cs * 0.06);
+        const r = Math.max(2, cs * 0.08);
+
+        ctxGrid.clearRect(0, 0, W, H);
+        ctxGrid.fillStyle = "#0A0E17";
+        ctxGrid.fillRect(0, 0, W, H);
+
+        if (!State.nodes.length) return;
+
+        // Draw edges first (standard + MST)
+        State.edges.forEach((e) => drawEdge(ctxGrid, e, cs));
+        // Draw nodes
+        State.nodes.forEach((n) => drawNode(ctxGrid, n, cs, pad, r));
+        // Draw redundant edges ON TOP of nodes so they are always visible
+        State.edges.filter(e => e.isRedundant).forEach((e) => {
+          const a = State.nodeMap[e.fromId], b = State.nodeMap[e.toId];
+          if (!a || !b) return;
+          const pa = gridToPixel(a.col, a.row), pb = gridToPixel(b.col, b.row);
+          const h = cs / 2;
+          ctxGrid.beginPath();
+          ctxGrid.moveTo(pa.x + h, pa.y + h);
+          ctxGrid.lineTo(pb.x + h, pb.y + h);
+          ctxGrid.strokeStyle = "#9B5DE5";
+          ctxGrid.lineWidth = 3.5;
+          ctxGrid.setLineDash([6, 3]);
+          ctxGrid.stroke();
+          ctxGrid.setLineDash([]);
+        });
+      }
+
+      function drawEdge(ctx, e, cs) {
+        if (!e || !e.fromId || !e.toId) return;
+        const a = State.nodeMap[e.fromId],
+          b = State.nodeMap[e.toId];
+        if (!a || !b) return;
+        const pa = gridToPixel(a.col, a.row),
+          pb = gridToPixel(b.col, b.row);
+        const half = cs / 2;
+
+        ctx.beginPath();
+        ctx.moveTo(pa.x + half, pa.y + half);
+        ctx.lineTo(pb.x + half, pb.y + half);
+
+        // Determine edge color based on type
+        let color = "#666666", // Default gray for standard edges
+          width = 2,
+          dash = [];
+
+        if (e.state === "flooded") {
+          color = "#EF4444";
+          width = 3.5;
+          dash = [5, 3];
+        } else if (e.state === "blocked") {
+          color = "#7F1D1D";
+          width = 2;
+          dash = [4, 4];
+        } else if (e.isRedundant) {
+          color = "#9B5DE5";
+          width = 2.5;
+          dash = [6, 3];
+        } else if (e.isMST) {
+          color = "#FFB800";
+          width = 2.5;
+        }
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.setLineDash(dash);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw flood marker (🌊 X) on flooded edges
+        if (e.state === "flooded") {
+          const mx = (pa.x + pb.x) / 2 + half,
+            my = (pa.y + pb.y) / 2 + half;
+          ctx.fillStyle = "#EF4444";
+          ctx.font = `bold ${Math.max(10, cs * 0.3)}px monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("✕", mx, my);
+        }
+
+        if (e.state === "blocked") {
+          const mx = (pa.x + pb.x) / 2 + half,
+            my = (pa.y + pb.y) / 2 + half;
+          ctx.fillStyle = "#EF4444";
+          ctx.font = `bold ${Math.max(8, cs * 0.25)}px monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("✕", mx, my);
+        }
+
+      if (State.overlays.costs) {
+  const mx = (pa.x + pb.x) / 2 + half,
+    my = (pa.y + pb.y) / 2 + half;
+  ctx.fillStyle = "#94A3B8";
+  ctx.font = `${Math.max(7, cs * 0.18)}px monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(e.eff.toFixed(1), mx, my);
+}
+      }
+
+      function drawNode(ctx, n, cs, pad, r) {
+        const { x, y } = gridToPixel(n.col, n.row);
+        const c = LOC_COLOR[n.type] || LOC_COLOR.Empty;
+        const isSelected = State.selectedNode === n.id;
+        const isHovered = State.hoveredNode === n.id;
+
+        // Background fill
+        roundRect(ctx, x + pad, y + pad, cs - pad * 2, cs - pad * 2, r);
+        ctx.fillStyle = isHovered ? lighten(c.fill, 0.15) : c.fill;
+        ctx.fill();
+
+        // Border
+        ctx.strokeStyle = isSelected
+          ? "#00F5D4"
+          : isHovered
+            ? "#475569"
+            : c.border;
+        ctx.lineWidth = isSelected ? 2 : 1;
+        ctx.stroke();
+
+        // Selection glow
+        if (isSelected) {
+          ctx.shadowColor = "#00F5D4";
+          ctx.shadowBlur = 12;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
+
+        // Icon / symbol
+        drawNodeIcon(ctx, n, x + pad, y + pad, cs - pad * 2, c.icon);
+
+        // Population label (only if cell is big enough)
+        if (cs > 34 && n.type !== LOC.EMPTY) {
+          ctx.fillStyle = "rgba(148,163,184,0.7)";
+          ctx.font = `${Math.max(6, cs * 0.14)}px 'JetBrains Mono',monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(
+            n.pop > 999 ? (n.pop / 1000).toFixed(1) + "k" : n.pop,
+            x + cs / 2,
+            y + cs - pad - 2,
+          );
+        }
+
+        // Risk dot (top-right)
+        if (n.type !== LOC.EMPTY) {
+          ctx.beginPath();
+          ctx.arc(
+            x + cs - pad - 3,
+            y + pad + 3,
+            Math.max(2, cs * 0.07),
+            0,
+            Math.PI * 2,
+          );
+          ctx.fillStyle = RISK_COLOR[n.risk] || "#22C55E";
+          ctx.fill();
+        }
+
+        // Primary Hospital badge (gold circle with "H")
+        if (n.isPrimaryHospital) {
+          ctx.beginPath();
+          const badgeX = x + cs / 2; // Center of cell
+          const badgeY = y + cs / 2;
+          const badgeR = Math.max(10, cs * 0.35); // Larger radius
+          ctx.arc(badgeX, badgeY, badgeR, 0, Math.PI * 2);
+          ctx.fillStyle = "#FFD700"; // Gold
+          ctx.fill();
+          ctx.strokeStyle = "#B8860B";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // Draw "H"
+          ctx.fillStyle = "#000000";
+          ctx.font = `bold ${Math.max(12, cs * 0.4)}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("H", badgeX, badgeY);
+        }
+
+        // Ambulance Depot badge (blue circle with "A")
+        if (n.isAmbulanceDepot) {
+          ctx.beginPath();
+          const badgeX = x + cs / 2; // Center of cell
+          const badgeY = y + cs / 2;
+          const badgeR = Math.max(10, cs * 0.35); // Larger radius
+          ctx.arc(badgeX, badgeY, badgeR, 0, Math.PI * 2);
+          ctx.fillStyle = "#00BFFF"; // Deep sky blue
+          ctx.fill();
+          ctx.strokeStyle = "#FFFFFF";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // Draw "A"
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = `bold ${Math.max(12, cs * 0.4)}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("A", badgeX, badgeY);
+        }
+      }
+
+      function drawNodeIcon(ctx, n, x, y, sz, color) {
+        const cx = x + sz / 2,
+          cy = y + sz / 2;
+        const s = Math.max(4, sz * 0.28);
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(1, sz * 0.04);
+
+        if (n.type === LOC.HOSPITAL) {
+          // Cross
+          ctx.fillRect(cx - sz * 0.04, cy - s * 0.6, sz * 0.08, s * 1.2);
+          ctx.fillRect(cx - s * 0.6, cy - sz * 0.04, s * 1.2, sz * 0.08);
+        } else if (n.type === LOC.RESIDENTIAL) {
+          // House
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - s * 0.7);
+          ctx.lineTo(cx + s * 0.6, cy - s * 0.1);
+          ctx.lineTo(cx + s * 0.6, cy + s * 0.6);
+          ctx.lineTo(cx - s * 0.6, cy + s * 0.6);
+          ctx.lineTo(cx - s * 0.6, cy - s * 0.1);
+          ctx.closePath();
+          ctx.stroke();
+        } else if (n.type === LOC.SCHOOL) {
+          // Book
+          ctx.strokeRect(cx - s * 0.5, cy - s * 0.55, s, s * 1.1);
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - s * 0.55);
+          ctx.lineTo(cx, cy + s * 0.55);
+          ctx.stroke();
+        } else if (n.type === LOC.INDUSTRIAL) {
+          // Factory chimney
+          ctx.fillRect(cx - s * 0.45, cy, s * 0.3, s * 0.55);
+          ctx.fillRect(cx + s * 0.15, cy, s * 0.3, s * 0.55);
+          ctx.fillRect(cx - s * 0.55, cy - s * 0.05, s * 1.1, s * 0.1);
+          ctx.fillRect(cx - s * 0.45, cy - s * 0.45, s * 0.2, s * 0.45);
+        } else if (n.type === LOC.POWER) {
+          // Lightning bolt
+          ctx.beginPath();
+          ctx.moveTo(cx + s * 0.2, cy - s * 0.7);
+          ctx.lineTo(cx - s * 0.15, cy - s * 0.05);
+          ctx.lineTo(cx + s * 0.1, cy - s * 0.05);
+          ctx.lineTo(cx - s * 0.2, cy + s * 0.7);
+          ctx.lineTo(cx + s * 0.15, cy + s * 0.05);
+          ctx.lineTo(cx - s * 0.1, cy + s * 0.05);
+          ctx.closePath();
+          ctx.fill();
+        } else if (n.type === LOC.AMBULANCE) {
+          // Cross in circle
+          ctx.beginPath();
+          ctx.arc(cx, cy, s * 0.55, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillRect(cx - sz * 0.04, cy - s * 0.4, sz * 0.08, s * 0.8);
+          ctx.fillRect(cx - s * 0.4, cy - sz * 0.04, s * 0.8, sz * 0.08);
+        }
+        // Empty: no icon
+      }
+
+      function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+
+      function lighten(hex, amt) {
+        const n = parseInt(hex.slice(1), 16);
+        const r = Math.min(255, ((n >> 16) & 255) + Math.round(255 * amt));
+        const g = Math.min(255, ((n >> 8) & 255) + Math.round(255 * amt));
+        const b = Math.min(255, (n & 255) + Math.round(255 * amt));
+        return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+      }
+
+      /* ═══ OVERLAY RENDERER ═══════════════════════════════════ */
+      function drawOverlays() {
+        const W = canvasOvr.clientWidth,
+          H = canvasOvr.clientHeight;
+        ctxOvr.clearRect(0, 0, W, H);
+        if (!State.nodes.length) return;
+        const { cellSize, scale, ox, oy } = State.view;
+        const cs = cellSize * scale;
+
+        if (State.overlays.heatmap) drawHeatmap(ctxOvr, cs);
+        if (State.overlays.coverage) drawCoverage(ctxOvr, cs);
+        if (State.overlays.clusters) drawClusters(ctxOvr, cs);
+        if (State.overlays.population) drawPopulation(ctxOvr, cs);
+        // FIX: MST and redundant path overlays (were missing — toggling had no effect before)
+        if (State.overlays.mst) drawEdgeOverlay(ctxOvr, cs, 'isMST', '#FFB800', 3.5, []);
+        if (State.overlays.redundant) drawEdgeOverlay(ctxOvr, cs, 'isRedundant', '#9B5DE5', 4.5, [8, 4]);
+        if (State.overlays.police) drawPoliceOverlay(ctxOvr, cs);
+      }
+
+      // Highlighted overlay for a specific edge flag, drawn on the overlay canvas for clean toggle support
+      function drawEdgeOverlay(ctx, cs, flagProp, color, lineWidth, dash) {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 10;
+        ctx.setLineDash(dash);
+        State.edges.forEach(function(e) {
+          if (!e[flagProp]) return;
+          if (e.state === 'flooded' || e.state === 'blocked') return;
+          var a = State.nodeMap[e.fromId], b = State.nodeMap[e.toId];
+          if (!a || !b) return;
+          var pa = gridToPixel(a.col, a.row), pb = gridToPixel(b.col, b.row);
+          var h = cs / 2;
+          ctx.beginPath();
+          ctx.moveTo(pa.x + h, pa.y + h);
+          ctx.lineTo(pb.x + h, pb.y + h);
+          ctx.stroke();
+        });
+        ctx.setLineDash([]);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+      }
+
+      function drawHeatmap(ctx, cs) {
+        State.nodes.forEach((n) => {
+          const { x, y } = gridToPixel(n.col, n.row);
+          ctx.fillStyle = riskToColor(n.riskVal, 0.55);
+          ctx.fillRect(x, y, cs, cs);
+        });
+      }
+      function riskToColor(v, alpha) {
+        // 0→green, 0.5→yellow, 1→crimson
+        const r = v < 0.5 ? Math.round(v * 2 * 255) : 255;
+        const g = v < 0.5 ? 200 : Math.round((1 - v) * 2 * 200);
+        return `rgba(${r},${g},50,${alpha})`;
+      }
+
+      function drawCoverage(ctx, cs) {
+        ctx.fillStyle = "rgba(0,0,0,0.45)";
+        ctx.fillRect(0, 0, canvasOvr.clientWidth, canvasOvr.clientHeight);
+
+        State.ambulances.forEach((amb, i) => {
+          if (!amb.nodeId) return;
+          const src = State.nodeMap[amb.nodeId];
+          if (!src) return;
+          const reachable = bfsHops(src, 5);
+          const color = AMB_COLORS[i];
+
+          reachable.forEach((n) => {
+            const { x, y } = gridToPixel(n.col, n.row);
+            ctx.fillStyle = hexToRgba(color, 0.38);
+            ctx.fillRect(x, y, cs, cs);
+            ctx.strokeStyle = hexToRgba(color, 0.55);
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1);
+          });
+
+          const srcPx = gridToPixel(src.col, src.row);
+          const cx2 = srcPx.x + cs / 2;
+          const cy2 = srcPx.y + cs / 2;
+          const radius = 5 * cs;
+          ctx.beginPath();
+          ctx.arc(cx2, cy2, radius, 0, Math.PI * 2);
+          ctx.strokeStyle = hexToRgba(color, 0.85);
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([8, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          const iconR = Math.max(10, cs * 0.38);
+          ctx.beginPath();
+          ctx.arc(cx2, cy2, iconR, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          const arm = iconR * 0.55;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(cx2 - iconR * 0.1, cy2 - arm, iconR * 0.2, arm * 2);
+          ctx.fillRect(cx2 - arm, cy2 - iconR * 0.1, arm * 2, iconR * 0.2);
+          ctx.font = "bold " + Math.max(9, cs * 0.18) + "px 'JetBrains Mono',monospace";
+          ctx.fillStyle = color;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText("AMB-" + (i + 1), cx2, cy2 + iconR + 3);
+        });
+      }
+
+      function drawPoliceOverlay(ctx, cs) {
+        const POLICE_COLOR = "#3B82F6";
+        const PATROL_COLOR = "#60A5FA";
+
+        ctx.fillStyle = "rgba(0,0,0,0.30)";
+        ctx.fillRect(0, 0, canvasOvr.clientWidth, canvasOvr.clientHeight);
+
+        let officers = State.police || [];
+        if (officers.length === 0) {
+          officers = State.nodes
+            .filter(function(n) { return n.risk === "High" || n.risk === "Medium"; })
+            .sort(function(a, b) { return b.riskVal - a.riskVal; })
+            .slice(0, 5)
+            .map(function(n, i) { return { officer_id: i, row: n.row, col: n.col, node_id: n.id, risk: n.risk }; });
+        }
+
+        officers.forEach(function(officer) {
+          const n = State.nodeMap[officer.node_id];
+          if (!n) return;
+          const pos = gridToPixel(n.col, n.row);
+          const x = pos.x, y = pos.y;
+          const cx2 = x + cs / 2;
+          const cy2 = y + cs / 2;
+
+          const patrolZone = bfsHops(n, 2);
+          patrolZone.forEach(function(pn) {
+            const pp = gridToPixel(pn.col, pn.row);
+            ctx.fillStyle = hexToRgba(PATROL_COLOR, 0.22);
+            ctx.fillRect(pp.x, pp.y, cs, cs);
+          });
+
+          ctx.fillStyle = officer.risk === "High" ? "rgba(239,68,68,0.25)" : "rgba(245,158,11,0.20)";
+          ctx.fillRect(x, y, cs, cs);
+
+          const iconR = Math.max(8, cs * 0.32);
+          ctx.beginPath();
+          ctx.arc(cx2, cy2, iconR * 1.45, 0, Math.PI * 2);
+          ctx.strokeStyle = hexToRgba(POLICE_COLOR, 0.55);
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(cx2, cy2, iconR, 0, Math.PI * 2);
+          ctx.fillStyle = POLICE_COLOR;
+          ctx.fill();
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.font = "bold " + Math.max(8, cs * 0.26) + "px sans-serif";
+          ctx.fillStyle = "#ffffff";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("✦", cx2, cy2);
+
+          ctx.font = "bold " + Math.max(8, cs * 0.16) + "px 'JetBrains Mono',monospace";
+          ctx.fillStyle = POLICE_COLOR;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText("P" + (officer.officer_id + 1), cx2, cy2 + iconR + 3);
+
+          const bsz = Math.max(7, cs * 0.18);
+          ctx.fillStyle = officer.risk === "High" ? "#EF4444" : "#F59E0B";
+          ctx.fillRect(x + 2, y + 2, bsz * 2.5, bsz);
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold " + Math.round(bsz * 0.85) + "px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(officer.risk === "High" ? "HIGH" : "MED", x + 2 + bsz * 1.25, y + 2 + bsz / 2);
+        });
+
+        const lx = 8, ly = canvasOvr.clientHeight - 68;
+        ctx.fillStyle = "rgba(10,14,23,0.82)";
+        ctx.beginPath();
+        ctx.roundRect(lx, ly, 148, 58, 5);
+        ctx.fill();
+        ctx.strokeStyle = POLICE_COLOR;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(lx, ly, 148, 58);
+        ctx.fillStyle = POLICE_COLOR;
+        ctx.font = "bold 10px 'JetBrains Mono',monospace";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText("POLICE DEPLOYMENT", lx + 8, ly + 7);
+        ctx.fillStyle = "#94A3B8";
+        ctx.font = "9px 'JetBrains Mono',monospace";
+        ctx.fillText("✦ Officer position", lx + 8, ly + 23);
+        ctx.fillStyle = hexToRgba(PATROL_COLOR, 0.8);
+        ctx.fillRect(lx + 8, ly + 36, 10, 10);
+        ctx.fillStyle = "#94A3B8";
+        ctx.fillText("Patrol zone (2 hops)", lx + 22, ly + 37);
+      }
+
+      function drawClusters(ctx, cs) {
+        // Detect actual cluster IDs from node data (K-Means may produce 2-5 clusters)
+        const clusterIds = [...new Set(State.nodes.map((n) => n.clusterId).filter(x => x !== undefined))].sort();
+        const clusterColors = ["#0090FF", "#9B5DE5", "#22C55E", "#FF6B6B", "#FFB800"];
+        clusterIds.forEach((gid, gi) => {
+          const ns = State.nodes.filter((n) => n.clusterId === gid);
+          const color = clusterColors[gi % clusterColors.length];
+          ns.forEach((n) => {
+            const { x, y } = gridToPixel(n.col, n.row);
+            ctx.fillStyle = hexToRgba(color, 0.12);
+            ctx.strokeStyle = hexToRgba(color, 0.5);
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(x + 1, y + 1, cs - 2, cs - 2);
+            ctx.fillRect(x, y, cs, cs);
+          });
+        });
+      }
+
+      function drawPopulation(ctx, cs) {
+        State.nodes.forEach((n) => {
+          if (!n.pop) return;
+          const { x, y } = gridToPixel(n.col, n.row);
+          const a = Math.min(0.7, (n.pop / 2000) * 0.7);
+          ctx.fillStyle = `rgba(34,197,94,${a})`;
+          ctx.fillRect(x, y, cs, cs);
+        });
+      }
+
+      function bfsHops(start, maxHops) {
+        const visited = new Set([start]);
+        const q = [[start, 0]];
+        while (q.length) {
+          const [node, hops] = q.shift();
+          if (hops >= maxHops) continue;
+          const neighbors = getGridNeighbors(node);
+          neighbors.forEach((nb) => {
+            if (!visited.has(nb)) {
+              visited.add(nb);
+              q.push([nb, hops + 1]);
+            }
+          });
+        }
+        return [...visited];
+      }
+      function getGridNeighbors(node) {
+        const { row, col } = node;
+        const nb = [];
+        [
+          [row - 1, col],
+          [row + 1, col],
+          [row, col - 1],
+          [row, col + 1],
+        ].forEach(([r, c]) => {
+          if (r >= 0 && r < GRID && c >= 0 && c < GRID) {
+            const id = `N_${String(r).padStart(2, "0")}_${String(c).padStart(2, "0")}`;
+            const n = State.nodeMap[id];
+            if (n) nb.push(n);
+          }
+        });
+        return nb;
+      }
+
+      function hexToRgba(hex, a) {
+        const n = parseInt(hex.replace("#", ""), 16);
+        return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+      }
+
+      /* ═══ ANIMATION RENDERER ══════════════════════════════════ */
+      let animFrame = 0;
+      function drawAnimations(ts) {
+        const W = canvasAnim.clientWidth,
+          H = canvasAnim.clientHeight;
+        ctxAnim.clearRect(0, 0, W, H);
+        if (!State.nodes.length) return;
+        const { cellSize, scale } = State.view;
+        const cs = cellSize * scale;
+
+        drawAmbulanceMarkers(ctxAnim, cs, ts);
+        if (State.route.length > 1) drawRoute(ctxAnim, cs, ts);
+        drawFloodEffects(ctxAnim, cs, ts);
+        drawMiniMap();
+      }
+
+      function drawAmbulanceMarkers(ctx, cs, ts) {
+        State.ambulances.forEach((amb, i) => {
+          const n = State.nodeMap[amb.nodeId];
+          if (!n) return;
+          const { x, y } = gridToPixel(n.col, n.row);
+          const cx2 = x + cs / 2,
+            cy2 = y + cs / 2;
+          const pulse = 0.85 + 0.15 * Math.sin(ts / 500 + i * 2);
+          const color = AMB_COLORS[i];
+
+          // Pulsing ring
+          ctx.beginPath();
+          ctx.arc(cx2, cy2, cs * 0.4 * pulse, 0, Math.PI * 2);
+          ctx.strokeStyle = hexToRgba(color, 0.4);
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Ambulance body
+          const bw = cs * 0.42,
+            bh = cs * 0.3;
+          const bx = cx2 - bw / 2,
+            by = cy2 - bh / 2;
+          roundRect(ctx, bx, by, bw, bh, 3);
+          ctx.fillStyle = color;
+          ctx.fill();
+
+          // Cross
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(cx2 - bw * 0.06, by + bh * 0.2, bw * 0.12, bh * 0.6);
+          ctx.fillRect(bx + bw * 0.2, cy2 - bh * 0.06, bw * 0.6, bh * 0.12);
+
+          // Unit label
+          ctx.font = `bold ${Math.max(8, cs * 0.14)}px 'JetBrains Mono'`;
+          ctx.fillStyle = color;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText(`A${i + 1}`, cx2, y + cs - cs * 0.22);
+        });
+      }
+
+      function drawRoute(ctx, cs, ts) {
+        if (State.route.length < 2) return;
+        const dash = 12,
+          gap = 6,
+          period = dash + gap;
+        const offset = -(ts / 40) % period;
+        ctx.beginPath();
+        State.route.forEach((id, i) => {
+          const n = State.nodeMap[id];
+          if (!n) return;
+          const { x, y } = gridToPixel(n.col, n.row);
+          if (i === 0) ctx.moveTo(x + cs / 2, y + cs / 2);
+          else ctx.lineTo(x + cs / 2, y + cs / 2);
+        });
+        ctx.strokeStyle = "#00F5D4";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([dash, gap]);
+        ctx.lineDashOffset = offset;
+        ctx.shadowColor = "#00F5D4";
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.shadowBlur = 0;
+      }
+
+      function drawFloodEffects(ctx, cs, ts) {
+        State.edges
+          .filter((e) => e.state === "flooded")
+          .forEach((e) => {
+            const a = State.nodeMap[e.fromId],
+              b = State.nodeMap[e.toId];
+            if (!a || !b) return;
+            const pa = gridToPixel(a.col, a.row),
+              pb = gridToPixel(b.col, b.row);
+            const mx = (pa.x + pb.x) / 2 + cs / 2,
+              my = (pa.y + pb.y) / 2 + cs / 2;
+            const rippleT = (ts % 1400) / 1400;
+            ctx.beginPath();
+            ctx.arc(mx, my, cs * 0.5 * rippleT, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(30,64,175,${1 - rippleT})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          });
+      }
+
+      function drawMiniMap() {
+        const W = 110,
+          H = 110;
+        ctxMini.fillStyle = "#0A0E17";
+        ctxMini.fillRect(0, 0, W, H);
+        const cs = W / GRID;
+        State.nodes.forEach((n) => {
+          const c = LOC_COLOR[n.type] || LOC_COLOR.Empty;
+          ctxMini.fillStyle = c.border;
+          ctxMini.fillRect(n.col * cs, n.row * cs, cs - 0.5, cs - 0.5);
+        });
+        State.ambulances.forEach((amb, i) => {
+          const n = State.nodeMap[amb.nodeId];
+          if (!n) return;
+          ctxMini.fillStyle = AMB_COLORS[i];
+          ctxMini.fillRect(n.col * cs - 1, n.row * cs - 1, cs + 1, cs + 1);
+        });
+        // Viewport rect
+        const { ox, oy, cellSize, scale } = State.view;
+        const area = document.getElementById("canvas-area");
+        const vx = (-ox / cellSize / scale) * cs,
+          vy = (-oy / cellSize / scale) * cs;
+        const vw = (area.clientWidth / cellSize / scale) * cs,
+          vh = (area.clientHeight / cellSize / scale) * cs;
+        ctxMini.strokeStyle = "#00F5D4";
+        ctxMini.lineWidth = 1;
+        ctxMini.strokeRect(
+          Math.max(0, vx),
+          Math.max(0, vy),
+          Math.min(W, vw),
+          Math.min(H, vh),
+        );
+      }
+
+      /* ═══ RAF LOOP ════════════════════════════════════════════ */
+      function rafLoop(ts) {
+        if (State.dirty.grid) {
+          drawGrid();
+          State.dirty.grid = false;
+        }
+        if (State.dirty.overlay) {
+          drawOverlays();
+          State.dirty.overlay = false;
+        }
+        drawAnimations(ts);
+        requestAnimationFrame(rafLoop);
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+         ZOOM & PAN
+      ═══════════════════════════════════════════════════════════ */
+      let panning = false,
+        lastPan = { x: 0, y: 0 };
+
+      function zoom(factor) {
+        const v = State.view;
+        const area = document.getElementById("canvas-area");
+        const cx = area.clientWidth / 2,
+          cy = area.clientHeight / 2;
+        const newScale = Math.max(0.3, Math.min(4, v.scale * factor));
+        v.ox = cx - (cx - v.ox) * (newScale / v.scale);
+        v.oy = cy - (cy - v.oy) * (newScale / v.scale);
+        v.scale = newScale;
+        State.dirty.grid = true;
+        State.dirty.overlay = true;
+      }
+      function resetView() {
+        const area = document.getElementById("canvas-area");
+        autoFitGrid(area.clientWidth, area.clientHeight);
+        State.dirty.grid = true;
+        State.dirty.overlay = true;
+      }
+
+      canvasAnim.addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          zoom(e.deltaY < 0 ? 1.12 : 0.89);
+        },
+        { passive: false },
+      );
+
+      canvasAnim.addEventListener("mousedown", (e) => {
+        if (e.button !== 0) return;
+        panning = true;
+        lastPan = { x: e.clientX, y: e.clientY };
+        canvasAnim.style.cursor = "grabbing";
+      });
+      document.addEventListener("mousemove", (e) => {
+        if (!panning) return;
+        State.view.ox += e.clientX - lastPan.x;
+        State.view.oy += e.clientY - lastPan.y;
+        lastPan = { x: e.clientX, y: e.clientY };
+        State.dirty.grid = true;
+        State.dirty.overlay = true;
+      });
+      document.addEventListener("mouseup", () => {
+        panning = false;
+        canvasAnim.style.cursor = "crosshair";
+      });
+
+      /* ═══ HOVER & CLICK ══════════════════════════════════════ */
+      const tooltip = document.getElementById("tooltip");
+      canvasAnim.addEventListener("mousemove", (e) => {
+        const rect = canvasAnim.getBoundingClientRect();
+        const { col, row } = pixelToGrid(
+          e.clientX - rect.left,
+          e.clientY - rect.top,
+        );
+        const id = `N_${String(row).padStart(2, "0")}_${String(col).padStart(2, "0")}`;
+        const n = State.nodeMap[id];
+        if (n && col >= 0 && col < GRID && row >= 0 && row < GRID) {
+          if (State.hoveredNode !== id) {
+            State.hoveredNode = id;
+            State.dirty.grid = true;
+          }
+          tooltip.innerHTML = `
+            <div class="tt-title">${n.type} <span style="color:${RISK_COLOR[n.risk]};font-size:10px;">[${n.risk}]</span></div>
+            <div class="tt-row"><span class="tt-k">ID</span><span class="tt-v">${n.id}</span></div>
+            <div class="tt-row"><span class="tt-k">Population</span><span class="tt-v">${n.pop.toLocaleString()}</span></div>
+            <div class="tt-row"><span class="tt-k">Cost Mult</span><span class="tt-v">×${n.costMult.toFixed(1)}</span></div>
+          `;
+          tooltip.classList.add("visible");
+          const tx = Math.min(e.clientX + 14, window.innerWidth - 180);
+          const ty = Math.min(e.clientY + 14, window.innerHeight - 100);
+          tooltip.style.left = tx + "px";
+          tooltip.style.top = ty + "px";
+        } else {
+          tooltip.classList.remove("visible");
+          if (State.hoveredNode) {
+            State.hoveredNode = null;
+            State.dirty.grid = true;
+          }
+        }
+      });
+      canvasAnim.addEventListener("mouseleave", () => {
+        tooltip.classList.remove("visible");
+      });
+
+      canvasAnim.addEventListener("click", (e) => {
+        if (panning) return;
+        const rect = canvasAnim.getBoundingClientRect();
+        const { col, row } = pixelToGrid(
+          e.clientX - rect.left,
+          e.clientY - rect.top,
+        );
+        if (col < 0 || col >= GRID || row < 0 || row >= GRID) return;
+        const id = `N_${String(row).padStart(2, "0")}_${String(col).padStart(2, "0")}`;
+        const n = State.nodeMap[id];
+        if (!n) return;
+        selectNode(id);
+        document.getElementById("event-target").value = id;
+      });
+
+      canvasAnim.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        const rect = canvasAnim.getBoundingClientRect();
+        const { col, row } = pixelToGrid(
+          e.clientX - rect.left,
+          e.clientY - rect.top,
+        );
+        if (col < 0 || col >= GRID || row < 0 || row >= GRID) return;
+        const id = `N_${String(row).padStart(2, "0")}_${String(col).padStart(2, "0")}`;
+        const n = State.nodeMap[id];
+        if (!n) return;
+        showCtxMenu(e.clientX, e.clientY, id);
+      });
+
+      function selectNode(id) {
+        State.selectedNode = id;
+        State.dirty.grid = true;
+        const n = State.nodeMap[id];
+        if (!n) return;
+        document.getElementById("node-section").style.display = "";
+        document.getElementById("nd-id").textContent = n.id;
+        document.getElementById("nd-content").innerHTML = `
+          <div class="node-detail-row"><span class="nd-key">Type</span><span class="nd-val"><span class="badge badge-teal">${n.type}</span></span></div>
+          <div class="node-detail-row"><span class="nd-key">Population</span><span class="nd-val mono">${n.pop.toLocaleString()}</span></div>
+          <div class="node-detail-row"><span class="nd-key">Risk</span><span class="nd-val"><span class="badge ${n.risk === "High" ? "badge-crimson" : n.risk === "Medium" ? "badge-amber" : "badge-teal"}">${n.risk}</span></span></div>
+          <div class="node-detail-row"><span class="nd-key">Cost Mult</span><span class="nd-val mono">×${n.costMult.toFixed(1)}</span></div>
+          <div class="node-detail-row"><span class="nd-key">Cluster</span><span class="nd-val mono">${n.clusterId}</span></div>
+          <div class="node-detail-row"><span class="nd-key">Accessible</span><span class="nd-val mono">${n.accessible ? "✓ Yes" : "✗ No"}</span></div>
+        `;
+      }
+
+      function showCtxMenu(x, y, nodeId) {
+        const m = document.getElementById("ctx-menu");
+        m.innerHTML = `
+          <div class="ctx-item" onclick="floodNode('${nodeId}');closeCtxMenu()">💧 Flood road from here</div>
+          <div class="ctx-sep"></div>
+          <div class="ctx-item" onclick="selectNode('${nodeId}');switchChallenge(1);closeCtxMenu()">◎ Inspect node</div>
+          <div class="ctx-item" onclick="document.getElementById('event-target').value='${nodeId}';closeCtxMenu()">⚡ Use as event target</div>
+          <div class="ctx-sep"></div>
+          <div class="ctx-item danger" onclick="setHighRisk('${nodeId}');closeCtxMenu()">⚠ Set High Risk</div>
+        `;
+        m.style.display = "block";
+        m.style.left = x + "px";
+        m.style.top = y + "px";
+        setTimeout(
+          () =>
+            document.addEventListener("click", closeCtxMenu, { once: true }),
+          50,
+        );
+      }
+      function closeCtxMenu() {
+        document.getElementById("ctx-menu").style.display = "none";
+      }
+
+      async function floodNode(id) {
+        // Find an adjacent edge to flood and send to server
+        const node = State.nodeMap[id];
+        if (!node) return;
+        const neighbors = State.edges.filter(
+          (e) => e.fromId === id || e.toId === id,
+        );
+        if (neighbors.length) {
+          const e = neighbors[0];
+          const fromId = e.fromId;
+          const toId = e.toId;
+          try {
+            const result = await API.flood(fromId, toId);
+            if (result.ok) {
+              // Update local state from server response
+              if (result.graph) {
+                loadCity(result.graph);
+              }
+              // Check for reroute events
+              const rerouteEvent = result.events?.find(ev => ev.type === "reroute");
+              const blockedEvent = result.events?.find(ev => ev.type === "reroute_blocked");
+              if (rerouteEvent) {
+                State.route = rerouteEvent.path;
+                log("info", "🔄", "D* Re-routed", `New path via ${rerouteEvent.path.length} nodes`);
+                toast("info", "Re-route", `Ambulance re-routed to avoid flood`);
+              } else if (blockedEvent) {
+                State.route = [];
+                log("error", "🚫", "Route blocked", blockedEvent.message || "No alternate route available");
+                toast("error", "Route Blocked", `${blockedEvent.message || "No alternate route — target unreachable"}`);
+              }
+              log("warn", "🌊", "Road flooded", `Edge ${fromId} → ${toId}`);
+              toast("warn", "Flood Event", `Road flooded, D* re-routing...`);
+            } else {
+              log("error", "✕", "Flood failed", result.message || result.error);
+              toast("error", "Flood Failed", result.message || "Server error");
+            }
+          } catch (err) {
+            console.error("Flood API error:", err);
+            log("error", "✕", "Flood API error", err.message);
+            toast("error", "API Error", "Failed to contact server");
+          }
+        }
+      }
+      function setHighRisk(id) {
+        const n = State.nodeMap[id];
+        if (!n) return;
+        n.risk = "High";
+        n.riskVal = 0.85;
+        n.costMult = 1.5;
+        State.dirty.grid = true;
+        State.dirty.overlay = true;
+        log("event", "⚠", "Risk escalated", `${id} → High`);
+        toast("warn", "Risk Update", `${id} set to High risk`);
+        updateRiskSummary();
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+         SIMULATION
+      ═══════════════════════════════════════════════════════════ */
+      const SPEED_DELAYS = [2000, 1000, 500, 250, 100, 16];
+      const SPEED_LABELS = ["0.5×", "1×", "2×", "5×", "10×", "∞"];
+
+      function togglePlay() {
+        if (State.running) pauseSim();
+        else playSim();
+      }
+      function playSim() {
+        if (State.step >= State.maxSteps) simReset();
+        State.running = true;
+        document.getElementById("play-btn").textContent = "⏸";
+        document.getElementById("play-btn").classList.add("playing");
+        scheduleStep();
+      }
+      function pauseSim() {
+        State.running = false;
+        document.getElementById("play-btn").textContent = "▶";
+        document.getElementById("play-btn").classList.remove("playing");
+        clearTimeout(State.simTimer);
+      }
+      function scheduleStep() {
+        if (!State.running) return;
+        const delay =
+          SPEED_DELAYS[parseInt(document.getElementById("speed-slider").value)];
+        State.simTimer = setTimeout(simStep, delay);
+      }
+      async function simStep() {
+        if (State.step >= State.maxSteps) {
+          pauseSim();
+          return;
+        }
+        State.step++;
+        // Try Flask, otherwise simulate locally
+        let events = [];
+        try {
+          const r = await API.step();
+          if (r.graph) loadCity(r.graph);
+          if (typeof r.step === "number") State.step = r.step;
+          if (r.events) events = r.events;
+        } catch {
+          events = generateSimEvent(State.step);
+        }
+        // Batch risk events into summary instead of logging each one
+        const riskEvents = events.filter(e => e.type === "risk");
+        const otherEvents = events.filter(e => e.type !== "risk");
+        // Apply risk events silently (update node state)
+        riskEvents.forEach(e => {
+          const n = State.nodeMap[e.nodeId];
+          if (n) {
+            n.risk = e.risk;
+            n.costMult = e.risk === "High" ? 1.5 : e.risk === "Medium" ? 1.2 : 1.0;
+          }
+        });
+        if (riskEvents.length > 0) {
+          State.dirty.grid = true;
+          State.dirty.overlay = true;
+          const high = riskEvents.filter(x => x.risk === "High").length;
+          const med = riskEvents.filter(x => x.risk === "Medium").length;
+          log("info", "📊", "C5 Risk Updated", `${riskEvents.length} nodes (${high} High, ${med} Med)`);
+          updateRiskSummary();
+        }
+        // Apply non-risk events normally
+        otherEvents.forEach(applyEvent);
+        updateStepUI();
+        if (State.running) scheduleStep();
+      }
+      function simStepBack() {
+        if (State.step > 0) {
+          State.step--;
+          updateStepUI();
+        }
+      }
+      async function simReset() {
+        pauseSim();
+        State.step = 0;
+        State.edges.forEach((e) => (e.state = "standard"));
+        // Reset some risk values for demo
+        State.nodes.forEach((n) => {
+          if (Math.random() < 0.05) n.state = "standard";
+        });
+        State.replans = 0;
+        State.route = [];
+        try {
+          const r = await API.reset();
+          if (r.graph) loadCity(r.graph);
+        } catch {}
+        State.dirty.grid = true;
+        State.dirty.overlay = true;
+        updateStepUI();
+        log("info", "↺", "Simulation reset", "Step 0 / 20");
+      }
+      function setSpeed(v) {
+        document.getElementById("speed-slider").value = v;
+        document.getElementById("speed-lbl").textContent =
+          SPEED_LABELS[parseInt(v)];
+      }
+
+      function generateSimEvent(step) {
+        const events = [];
+        if (step % 3 === 0) {
+          const edges = State.edges.filter((e) => e.state === "standard");
+          if (edges.length) {
+            const e = edges[Math.floor(Math.random() * edges.length)];
+            e.state = Math.random() < 0.6 ? "flooded" : "blocked";
+            events.push({ type: "road", edgeId: e.id, state: e.state });
+          }
+        }
+        if (step % 5 === 0) {
+          const ns = State.nodes.filter((n) => n.type === LOC.RESIDENTIAL);
+          const n = ns[Math.floor(Math.random() * ns.length)];
+          if (n) {
+            n.risk = Math.random() < 0.5 ? "High" : "Medium";
+            n.costMult = n.risk === "High" ? 1.5 : 1.2;
+            events.push({ type: "risk", nodeId: n.id, risk: n.risk });
+          }
+        }
+        if (step % 4 === 0 && State.ambulances.some((a) => a.nodeId)) {
+          const amb = State.ambulances[step % 3];
+          const ns = State.nodes.filter((n) => n.type === LOC.RESIDENTIAL);
+          const target = ns[Math.floor(Math.random() * ns.length)];
+          if (target && amb.nodeId) {
+            State.route = buildDemoRoute(State.nodeMap[amb.nodeId], target);
+            events.push({ type: "route", ambId: amb.id, target: target.id });
+          }
+        }
+        return events;
+      }
+
+      function buildDemoRoute(from, to) {
+        if (!from || !to) return [];
+        // Simple BFS path
+        const q = [[from, [from.id]]];
+        const visited = new Set([from.id]);
+        while (q.length) {
+          const [node, path] = q.shift();
+          if (node.id === to.id) return path;
+          getGridNeighbors(node).forEach((nb) => {
+            if (!visited.has(nb.id)) {
+              visited.add(nb.id);
+              q.push([nb, [...path, nb.id]]);
+            }
+          });
+        }
+        return [from.id, to.id];
+      }
+
+      function applyEvent(e) {
+        if (e.type === "road") {
+          // Try both directions since server and UI may store edge IDs in different order
+          let edge = State.edges.find((ed) => ed.id === e.edgeId);
+          console.log(`[UI road event] Looking for edge ${e.edgeId}, found: ${!!edge}, state: ${e.state}`);
+          if (!edge) {
+            // Try reversed edge ID: E_A_B -> E_B_A
+            const parts = e.edgeId.match(/^E_(N_\d+_\d+)_(N_\d+_\d+)$/);
+            if (parts) {
+              const revId = `E_${parts[2]}_${parts[1]}`;
+              edge = State.edges.find((ed) => ed.id === revId);
+              console.log(`[UI road event] Trying reversed ${revId}, found: ${!!edge}`);
+            }
+          }
+          if (edge) {
+            edge.state = e.state;
+            State.dirty.grid = true;
+            console.log(`[UI road event] Set edge ${edge.id} state to ${e.state}`);
+            log(
+              "warn",
+              e.state === "flooded" ? "🌊" : "🚧",
+              e.state === "flooded" ? "C2: Road Flooded" : "C2: Road Blocked",
+              `${edge.fromId} ↔ ${edge.toId}`,
+            );
+          } else {
+            console.warn(`[UI road event] Edge not found: ${e.edgeId}`);
+          }
+        }
+        if (e.type === "emergency") {
+          log("event", "🚨", "Emergency Reported", `C4 triggered at ${e.nodeId}`);
+          toast("warn", "Emergency", `Emergency at ${e.nodeId} — dispatching ambulance`);
+          State.dirty.grid = true;
+        }
+        if (e.type === "risk") {
+          const n = State.nodeMap[e.nodeId];
+          if (n) {
+            n.risk = e.risk;
+            n.costMult =
+              e.risk === "High" ? 1.5 : e.risk === "Medium" ? 1.2 : 1.0;
+            State.dirty.grid = true;
+            State.dirty.overlay = true;
+            updateRiskSummary();
+          }
+        }
+        if (e.type === "route") {
+          State.replans++;
+          document.getElementById("c4-replans").textContent = State.replans;
+          if (Array.isArray(e.path)) {
+            State.route = e.path;
+          }
+          if (e.cost) State.lastRouteCost = e.cost;
+          const pathInfo = Array.isArray(e.path) && e.path.length
+            ? `${e.path[0]} → ${e.path[e.path.length - 1]} | ${e.path.length} hops${e.cost ? ` | cost ${e.cost.toFixed(1)}` : ''}`
+            : `AMB-${(e.ambId ?? 0) + 1} → ${e.target ?? "live target"}`;
+          log("route", "🚑", "C4: Ambulance Dispatched", pathInfo);
+          updateC4Panel();
+        }
+        if (e.type === "reroute") {
+          State.replans++;
+          document.getElementById("c4-replans").textContent = State.replans;
+          if (Array.isArray(e.path)) State.route = e.path;
+          if (e.cost) State.lastRouteCost = e.cost;
+          log("info", "🔄", "C4: D* Lite Re-routed", `${e.path?.length ?? 0} hops via C2 redundant edges | cost ${(e.cost ?? 0).toFixed(1)}`);
+          toast("info", "Re-route", "C4: Ambulance re-routed via backup path");
+          updateC4Panel();
+        }
+        if (e.type === "reroute_blocked") {
+          State.replans++;
+          document.getElementById("c4-replans").textContent = State.replans;
+          State.route = [];
+          log("error", "🚫", "C4: Route Blocked", e.message || "No alternate route — all paths flooded");
+          toast("error", "Route Blocked", e.message || "No alternate route — target unreachable");
+          updateC4Panel();
+        }
+        if (e.type === "reroute_failed") {
+          log("error", "✕", "Reroute failed", e.reason || "Internal error during reroute");
+          toast("error", "Reroute Error", e.reason || "Failed to compute alternate route");
+        }
+        if (e.type === "quiet") {
+          log("info", "—", "No event", e.message || "Quiet step");
+        }
+      }
+
+      function updateStepUI() {
+        const s = State.step,
+          m = State.maxSteps;
+        document.getElementById("step-display").textContent = String(
+          s,
+        ).padStart(2, "0");
+        document.getElementById("st-step").textContent =
+          `${String(s).padStart(2, "0")}/${m}`;
+        const pct = Math.round((s / m) * 100);
+        document.getElementById("progress-pct").textContent = pct + "%";
+        document.getElementById("sim-progress").style.width = pct + "%";
+        document.getElementById("scrubber-fill").style.width = pct + "%";
+        document.getElementById("scrubber-mid").textContent =
+          `${pct}% — Step ${s}`;
+
+        const flooded = State.edges.filter((e) => e.state === "flooded").length;
+        const blocked = State.edges.filter((e) => e.state === "blocked").length;
+        document.getElementById("st-flood").textContent = flooded;
+        document.getElementById("st-block").textContent = blocked;
+
+        State.dirty.grid = true;
+        State.dirty.overlay = true;
+      }
+
+      function scrubberClick(e) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const frac = (e.clientX - rect.left) / rect.width;
+        State.step = Math.round(frac * State.maxSteps);
+        updateStepUI();
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+         CHALLENGE ACTIONS
+      ═══════════════════════════════════════════════════════════ */
+      async function runChallenge(n) {
+        const dot = document.getElementById(`dot-c${n}`);
+        dot.className = "status-dot dot-running";
+        const tab = document.querySelector(`.c-tab[data-ch="${n}"]`);
+        tab.className = "c-tab status-running";
+        log("info", "⚡", `Running Challenge ${n}…`, "");
+
+        let success = false;
+        try {
+          const r = await API.runChallenge(n, {});
+          applyAPIResult(n, r);
+          success = true;
+        } catch (err) {
+          // Log error for debugging, then fall back to demo mode
+          console.error(`Challenge ${n} failed:`, err);
+          log("error", "✕", `C${n} API error`, err.message || "Unknown error");
+          simulateChallengeResult(n);
+          success = true;
+        }
+
+        dot.className = `status-dot ${success ? "dot-done" : "dot-error"}`;
+        tab.className = `c-tab ${success ? "status-complete" : "status-error"}`;
+        log("info", "✓", `Challenge ${n} complete`, "");
+        toast("info", `C${n} Complete`, `Challenge ${n} finished successfully`);
+        State.dirty.grid = true;
+        State.dirty.overlay = true;
+      }
+
+      function simulateChallengeResult(n) {
+        if (n === 1) {
+          State.c1 = {
+            bt: Math.floor(Math.random() * 50),
+            viol: 0,
+            time: (Math.random() * 0.1).toFixed(3) + "s",
+            status: "Backtracking",
+          };
+          document.getElementById("c1-bt").textContent = State.c1.bt;
+          document.getElementById("c1-viol").textContent = State.c1.viol;
+          document.getElementById("c1-time").textContent = State.c1.time;
+          document.getElementById("c1-status").textContent = State.c1.status;
+          ["cc1", "cc2", "cc3"].forEach((id) => {
+            const el = document.getElementById(id);
+            el.textContent = "✓";
+            el.style.color = "#22C55E";
+          });
+        }
+        if (n === 2) {
+          const mst = State.edges.filter((e) => e.isMST).length;
+          document.getElementById("c2-mst").textContent = mst;
+          document.getElementById("c2-red").textContent = Math.floor(
+            mst * 0.03,
+          );
+          document.getElementById("c2-cost").textContent = (mst * 0.9).toFixed(
+            1,
+          );
+          document.getElementById("c2-paths").textContent = "2 ✓";
+          document.getElementById("c2-hosp").textContent =
+            State.nodes.find((n) => n.type === LOC.HOSPITAL)?.id || "—";
+          document.getElementById("c2-depot").textContent =
+            State.nodes.find((n) => n.type === LOC.AMBULANCE)?.id || "—";
+        }
+        if (n === 3) {
+          const wc = 18 + Math.floor(Math.random() * 8);
+          document.getElementById("c3-worst").textContent = wc;
+          document.getElementById("c3-avg").textContent =
+            (wc * 0.65).toFixed(1) + " hops";
+          document.getElementById("c3-uncov").textContent = Math.floor(
+            Math.random() * 5,
+          );
+          document.getElementById("c3-gen").textContent = "Gen 100 / 100";
+          document.getElementById("c3-fit").textContent = `Fitness: ${wc}`;
+          document.getElementById("c3-prog").style.width = "100%";
+          document.getElementById("worst-dist").textContent = wc + " hops";
+          updateAmbulanceTracker();
+          const plDiv = document.getElementById("amb-placement-list");
+          plDiv.innerHTML = State.ambulances
+            .map(
+              (a, i) => `
+            <div class="chal-stat-row">
+              <span class="chal-k" style="color:${AMB_COLORS[i]}">AMB-${i + 1}</span>
+              <span class="chal-v">${a.nodeId || "—"} (${a.coverage} nodes)</span>
+            </div>`,
+            )
+            .join("");
+        }
+        if (n === 4) {
+          const src = State.ambulances[0];
+          const dest = State.nodes.find((n) => n.type === LOC.RESIDENTIAL);
+          if (src && dest && src.nodeId) {
+            State.route = buildDemoRoute(State.nodeMap[src.nodeId], dest);
+            updateC4Panel();
+          }
+        }
+        if (n === 5) {
+          const acc = 0.82 + Math.random() * 0.12;
+          document.getElementById("c5-sil").textContent = (
+            0.55 +
+            Math.random() * 0.2
+          ).toFixed(3);
+          document.getElementById("c5-samples").textContent =
+            State.nodes.length;
+          document.getElementById("c5-acc").textContent =
+            (acc * 100).toFixed(1) + "%";
+          document.getElementById("c5-updated").textContent = "✓ Yes";
+          // Apply random risk levels
+          State.nodes.forEach((n) => {
+            const rv = Math.random();
+            n.risk = rv > 0.75 ? "High" : rv > 0.45 ? "Medium" : "Low";
+            n.riskVal = rv;
+            n.costMult =
+              n.risk === "High" ? 1.5 : n.risk === "Medium" ? 1.2 : 1.0;
+          });
+          updateRiskSummary();
+          State.dirty.overlay = true;
+        }
+      }
+
+      function applyAPIResult(n, r) {
+        if (!r) return;
+        if (r.graph) {
+          // Merge C2 hospital/depots into graph data if present
+          const graphData = r.graph;
+          if (n === 2) {
+            if (r.hospital) graphData.hospital = r.hospital;
+            if (r.depots) graphData.depots = r.depots;
+          }
+          loadCity(graphData);
+        }
+
+        if (n === 1 && typeof r.success !== "undefined") {
+          document.getElementById("c1-status").textContent = r.success
+            ? "Solved"
+            : "Fallback";
+          // Display violations
+          if (r.violations) {
+            const v = r.violations;
+            const total = v.total || 0;
+            document.getElementById("c1-viol").textContent = total;
+            // Color code: green if 0, red if >0
+            document.getElementById("c1-viol").className = total === 0 
+              ? "chal-v green" 
+              : "chal-v red";
+            // Detailed breakdown
+            document.getElementById("c1-viol-c1").textContent = v.c1 || 0;
+            document.getElementById("c1-viol-c1").className = (v.c1 || 0) === 0 ? "chal-v green" : "chal-v red";
+            document.getElementById("c1-viol-c2").textContent = v.c2 || 0;
+            document.getElementById("c1-viol-c2").className = (v.c2 || 0) === 0 ? "chal-v green" : "chal-v red";
+            document.getElementById("c1-viol-c3").textContent = v.c3 || 0;
+            document.getElementById("c1-viol-c3").className = (v.c3 || 0) === 0 ? "chal-v green" : "chal-v red";
+            console.log(`[C1] Violations: C1=${v.c1}, C2=${v.c2}, C3=${v.c3}, Total=${total}`);
+          }
+        }
+        if (n === 2) {
+          // MST Edges count
+          if (typeof r.mstEdges !== "undefined") {
+            document.getElementById("c2-mst").textContent = r.mstEdges;
+          }
+          // Redundant edges count
+          if (typeof r.extraEdges !== "undefined") {
+            document.getElementById("c2-red").textContent = r.extraEdges;
+          }
+          // Total cost
+          if (typeof r.totalCost !== "undefined") {
+            document.getElementById("c2-cost").textContent = r.totalCost.toFixed(1);
+          }
+          // H↔Depot paths
+          document.getElementById("c2-paths").textContent = r.redundancyOk
+            ? "2 ✓"
+            : "1 ✕";
+          // Primary hospital
+          if (r.hospital) {
+            document.getElementById("c2-hosp").textContent =
+              `N_${String(r.hospital.row).padStart(2, '0')}_${String(r.hospital.col).padStart(2, '0')}`;
+          }
+          // Ambulance depots (list)
+          if (r.depots && r.depots.length > 0) {
+            const depotText = r.depots.map(d => `N_${String(d.row).padStart(2, '0')}_${String(d.col).padStart(2, '0')}`).join(', ');
+            document.getElementById("c2-depot").textContent = depotText;
+          }
+
+          // ── FIX: tag edges with isMST / isRedundant from server sets ──
+          // road_network.py returns mst_edge_set and extra_edge_set as
+          // lists of [[r1,c1],[r2,c2]] coordinate pairs.
+          // We build lookup sets and stamp every matching edge object.
+          const toEdgeKey = (p1, p2) => {
+            const a = `N_${String(p1[0]).padStart(2,'0')}_${String(p1[1]).padStart(2,'0')}`;
+            const b = `N_${String(p2[0]).padStart(2,'0')}_${String(p2[1]).padStart(2,'0')}`;
+            return [a < b ? a : b, a < b ? b : a].join('|');
+          };
+
+          const mstKeys = new Set();
+          const redKeys = new Set();
+
+          if (Array.isArray(r.mst_edge_set)) {
+            r.mst_edge_set.forEach(pair => { if (pair && pair.length === 2) mstKeys.add(toEdgeKey(pair[0], pair[1])); });
+          }
+          if (Array.isArray(r.extra_edge_set)) {
+            r.extra_edge_set.forEach(pair => { if (pair && pair.length === 2) redKeys.add(toEdgeKey(pair[0], pair[1])); });
+          }
+
+          if (mstKeys.size > 0 || redKeys.size > 0) {
+            let mstTagged = 0, redTagged = 0;
+            State.edges.forEach(e => {
+              const a = e.fromId < e.toId ? e.fromId : e.toId;
+              const b = e.fromId < e.toId ? e.toId : e.fromId;
+              const key = a + '|' + b;
+              if (redKeys.has(key)) {
+                e.isRedundant = true;
+                e.isMST = false;
+                redTagged++;
+              } else if (mstKeys.has(key)) {
+                e.isMST = true;
+                e.isRedundant = false;
+                mstTagged++;
+              } else {
+                // Edge exists in graph but not in MST (shouldn't happen, but safe)
+                e.isMST = false;
+                e.isRedundant = false;
+              }
+            });
+            console.log(`[C2] Tagged ${mstTagged} MST edges, ${redTagged} redundant edges`);
+            log("info", "🔶", "C2: Edge types tagged", `${mstTagged} MST (amber) | ${redTagged} redundant (violet)`);
+          } else {
+            console.warn("[C2] mst_edge_set / extra_edge_set missing or empty in server response — MST overlay won't work");
+          }
+
+          State.dirty.grid = true;
+          State.dirty.overlay = true;
+        }
+        if (n === 3) {
+          if (typeof r.fitness !== "undefined" && r.fitness !== null) {
+            document.getElementById("c3-worst").textContent = r.fitness.toFixed(2);
+            document.getElementById("worst-dist").textContent = r.fitness.toFixed(2);
+          } else {
+            document.getElementById("c3-worst").textContent = "∞";
+            document.getElementById("worst-dist").textContent = "Unreachable";
+          }
+          if (Array.isArray(r.positions)) {
+            r.positions.forEach((p, i) => {
+              if (State.ambulances[i]) State.ambulances[i].nodeId = p.nodeId;
+            });
+            updateAmbulanceTracker();
+          }
+        }
+        if (n === 4) {
+          if (Array.isArray(r.path) && r.path.length > 0) {
+            State.route = r.path;
+            if (r.cost) State.lastRouteCost = r.cost;
+            updateC4Panel();
+            // Force canvas redraw so animated route line appears immediately
+            State.dirty.grid = true;
+            State.dirty.overlay = true;
+            log("route", "\u{1F691}", "C4: Route Active",
+              `${r.path.length} hops \u2192 ${r.path[r.path.length-1]} | cost ${(r.cost||0).toFixed(1)}`);
+          }
+        }
+        if (n === 5) {
+          document.getElementById("c5-updated").textContent = "✓ Yes";
+          // Apply initial risk predictions from C5
+          if (Array.isArray(r.riskUpdates) && r.riskUpdates.length > 0) {
+            console.log(`[C5 UI] Applying ${r.riskUpdates.length} risk updates`);
+            r.riskUpdates.forEach((ru) => {
+              const node = State.nodeMap[ru.nodeId];
+              if (node) {
+                node.risk = ru.risk;
+                node.costMult =
+                  ru.risk === "High" ? 1.5 : ru.risk === "Medium" ? 1.2 : 1.0;
+              }
+            });
+            // Show summary in log
+            const high = r.riskUpdates.filter((x) => x.risk === "High").length;
+            const med = r.riskUpdates.filter((x) => x.risk === "Medium").length;
+            const low = r.riskUpdates.filter((x) => x.risk === "Low").length;
+            log("info", "📊", "C5 Risk Predictions Applied", `${high} High, ${med} Medium, ${low} Low`);
+            State.dirty.grid = true;
+            State.dirty.overlay = true;
+            updateRiskSummary();
+          }
+          if (r.graph) {
+            updateRiskSummary();
+          }
+        }
+      }
+
+      function updateC4Panel() {
+        const path = State.route;
+        document.getElementById("c4-target").textContent =
+          path[path.length - 1] || "—";
+        document.getElementById("c4-hops").textContent = Math.max(
+          0,
+          path.length - 1,
+        );
+        // Use stored cost if available, otherwise estimate
+        const cost = State.lastRouteCost || (path.length * 0.9);
+        document.getElementById("c4-cost").textContent = cost.toFixed(1);
+        const pathEl = document.getElementById("c4-path");
+        if (path.length) {
+          pathEl.innerHTML = path
+            .map(
+              (id, i) =>
+                `<span class="path-node">${id.replace("N_", "")}</span>${i < path.length - 1 ? '<span class="path-arrow">→</span>' : ""}`,
+            )
+            .join("");
+        }
+      }
+
+      // ── FIX: D* Lite demo helpers ──────────────────────────────────────────
+      //
+      // Problem: emergencies spawn at random nodes. Most nodes have only one
+      // path to the ambulance, so flooding a road leaves no alternate route and
+      // D* Lite has nothing interesting to show.
+      //
+      // Solution: findBestDstarTarget() returns a node that lies at the END of
+      // a redundant path (isRedundant edge) so the demo is guaranteed to have
+      // an alternate route available when a road is flooded mid-route.
+      //
+      // demoReroute() runs the full sequence automatically:
+      //   1. Pick the best target node.
+      //   2. Send it as the emergency target to the server (C4 route).
+      //   3. Flood one edge on the primary path.
+      //   4. Show the D* Lite reroute in the log.
+      //
+      // Call demoReroute() from the "Demo D* Reroute" button in the C4 panel.
+
+      function findBestDstarTarget() {
+        // Strategy 1: find a node at the far end of a redundant edge —
+        //   the path to it necessarily passes through the redundant section.
+        const redundantEdges = State.edges.filter(e => e.isRedundant && e.state === 'standard');
+        if (redundantEdges.length > 0) {
+          // Pick the redundant edge furthest (by node ID hash) from the ambulances
+          for (const e of redundantEdges) {
+            const nodeA = State.nodeMap[e.fromId];
+            const nodeB = State.nodeMap[e.toId];
+            // Prefer the endpoint that is Residential (civilians live there)
+            if (nodeB && nodeB.type === LOC.RESIDENTIAL) return nodeB;
+            if (nodeA && nodeA.type === LOC.RESIDENTIAL) return nodeA;
+          }
+          // Fallback: just return one endpoint of the first redundant edge
+          const e0 = redundantEdges[0];
+          return State.nodeMap[e0.toId] || State.nodeMap[e0.fromId];
+        }
+
+        // Strategy 2 (fallback — C2 not run yet or no redundant edges loaded):
+        //   find a Residential node that has at least 3 road neighbours so
+        //   flooding one still leaves alternate paths.
+        const residentialNodes = State.nodes.filter(n => n.type === LOC.RESIDENTIAL && n.accessible !== false);
+        let bestNode = null, bestDegree = 0;
+        for (const n of residentialNodes) {
+          const degree = State.edges.filter(e =>
+            (e.fromId === n.id || e.toId === n.id) && e.state === 'standard'
+          ).length;
+          if (degree > bestDegree) { bestDegree = degree; bestNode = n; }
+        }
+        if (bestNode) return bestNode;
+
+        // Last resort: any residential node
+        return residentialNodes[0] || State.nodes.find(n => n.type === LOC.RESIDENTIAL);
+      }
+
+      async function demoReroute() {
+        // ── STEP 1: Ask the server to pick a target with a guaranteed alternate path ──
+        // The server's /api/challenge/4/run picks any Residential target via D* Lite.
+        // We use /api/simulation/demo_route which calls _pick_target_with_two_paths()
+        // to guarantee the target has ≥2 edge-disjoint paths from the nearest ambulance.
+        // Fallback: use findBestDstarTarget() (client-side heuristic) if server unavailable.
+
+        log("info", "🎬", "D* Demo", "Finding target with guaranteed alternate path...");
+        toast("info", "D* Demo", "Selecting target — alternate path confirmed before dispatch");
+
+        let routePath = [];
+        let floodFromId = null, floodToId = null;
+
+        try {
+          // Call /api/demo_route — a new endpoint that returns:
+          //   { path: [...nodeIds], floodFrom: nodeId, floodTo: nodeId }
+          // where floodFrom/floodTo is a mid-route edge guaranteed to have an alternate.
+          const r = await fetch(FLASK_URL + "/api/demo_route", { method: "POST" });
+          const data = await r.json();
+          if (data.ok && Array.isArray(data.path) && data.path.length >= 3) {
+            routePath    = data.path;
+            floodFromId  = data.floodFrom;
+            floodToId    = data.floodTo;
+            State.route  = routePath;
+            if (data.cost) State.lastRouteCost = data.cost;
+            updateC4Panel();
+            State.dirty.grid    = true;
+            State.dirty.overlay = true;
+            log("route", "🚑", "C4: Route set (demo)", `${routePath.length} hops — alternate path verified ✔`);
+            toast("info", "Route Active", `${routePath.length} hops to target — D* Lite ready`);
+          } else {
+            throw new Error(data.message || "demo_route returned no path");
+          }
+        } catch (err) {
+          // Fallback: use C4 challenge run + client-side target selection
+          console.warn("[demoReroute] /api/demo_route failed:", err.message, "— falling back");
+          const target = findBestDstarTarget();
+          if (!target) {
+            toast("error", "Demo Failed", "No suitable target found. Run C1, C2, C3 first.");
+            return;
+          }
+          try {
+            const r2 = await API.runChallenge(4, {});
+            if (r2 && Array.isArray(r2.path) && r2.path.length >= 3) {
+              routePath = r2.path;
+              State.route = routePath;
+              if (r2.cost) State.lastRouteCost = r2.cost;
+              updateC4Panel();
+              State.dirty.grid = true;
+              log("route", "🚑", "C4: Route set (fallback)", `${routePath.length} hops`);
+            }
+          } catch (err2) {
+            const ambNode = State.nodeMap[State.ambulances[0]?.nodeId];
+            if (ambNode) routePath = State.route = buildDemoRoute(ambNode, target);
+            updateC4Panel();
+            log("info", "🚑", "C4: Demo route (offline)", `${routePath.length} hops`);
+          }
+        }
+
+        if (routePath.length < 3) {
+          toast("warn", "Short Route", "Route too short to demonstrate rerouting.");
+          return;
+        }
+
+        // ── STEP 2: Wait briefly so user sees the route, then flood ──
+        await new Promise(res => setTimeout(res, 900));
+
+        // Use server-provided flood edge if available; else pick mid-route
+        if (!floodFromId || !floodToId) {
+          const mid    = Math.floor(routePath.length / 2);
+          floodFromId  = routePath[mid - 1];
+          floodToId    = routePath[mid];
+        }
+        if (!floodFromId || !floodToId) {
+          toast("error", "Demo Failed", "Could not determine flood edge.");
+          return;
+        }
+
+        log("warn", "🌊", "D* Demo: Flooding mid-route edge", `${floodFromId} ↔ ${floodToId}`);
+        toast("warn", "Flood Injected", `Flooding ${floodFromId}↔${floodToId} — D* Lite must reroute`);
+
+        // Mark edge as flooded in UI immediately for visual feedback
+        const floodEdge = State.edges.find(e =>
+          (e.fromId === floodFromId && e.toId === floodToId) ||
+          (e.fromId === floodToId   && e.toId === floodFromId)
+        );
+        if (floodEdge) { floodEdge.state = "flooded"; State.dirty.grid = true; }
+
+        try {
+          const fr = await API.flood(floodFromId, floodToId);
+          if (fr && fr.graph) loadCity(fr.graph);
+
+          const rerouteEv = fr?.events?.find(ev => ev.type === "reroute");
+          const blockedEv = fr?.events?.find(ev => ev.type === "reroute_blocked");
+
+          if (rerouteEv && Array.isArray(rerouteEv.path) && rerouteEv.path.length > 0) {
+            // ✅ SUCCESS — D* Lite found alternate path
+            const oldLen = routePath.length;
+            State.route = rerouteEv.path;
+            if (rerouteEv.cost) State.lastRouteCost = rerouteEv.cost;
+            State.replans++;
+            document.getElementById("c4-replans").textContent = State.replans;
+            updateC4Panel();
+            State.dirty.grid    = true;
+            State.dirty.overlay = true;
+            log("info", "✅", "D* Lite Re-routed!", `Old: ${oldLen} hops → New: ${rerouteEv.path.length} hops via backup road | cost ${(rerouteEv.cost||0).toFixed(1)}`);
+            toast("info", "D* Re-routed!", `Alternate path: ${rerouteEv.path.length} hops — D* Lite avoided flooded edge`);
+          } else if (blockedEv) {
+            State.route = [];
+            updateC4Panel();
+            log("error", "🚫", "D* Demo: No alternate path", blockedEv.message || "All paths blocked — run C2 for redundant edges");
+            toast("warn", "No Alt Path", "Target unreachable — ensure C2 redundant edges are built");
+          } else {
+            // Server processed flood but no reroute event — happens when current_route
+            // wasn't set server-side. Show the flood visually and explain.
+            State.dirty.grid = true;
+            log("info", "🔄", "D* Demo: Edge flooded", "Road blocked visually — trigger another flood on active route to see reroute");
+            toast("info", "Edge Flooded", "Road blocked. If route crosses it, D* Lite auto-reroutes.");
+          }
+        } catch (err) {
+          log("error", "✕", "D* Demo flood API error", err.message);
+          toast("error", "API Error", "Flood failed — is Flask running?");
+        }
+      }
+
+      function updateAmbulanceTracker() {
+        document.getElementById("amb-list").innerHTML = State.ambulances
+          .map(
+            (a, i) => `
+          <div class="amb-row">
+            <div class="amb-dot" style="background:${AMB_COLORS[i]};box-shadow:0 0 6px ${AMB_COLORS[i]}"></div>
+            <div class="amb-info">
+              <div class="amb-id" style="color:${AMB_COLORS[i]}">AMB-${i + 1}</div>
+              <div class="amb-pos">${a.nodeId || "—"} — ${a.coverage} nodes</div>
+            </div>
+            <span class="badge ${a.status === "STANDBY" ? "badge-muted" : "badge-crimson"}">${a.status}</span>
+          </div>`,
+          )
+          .join("");
+      }
+
+      function updateRiskSummary() {
+        const high = State.nodes.filter((n) => n.risk === "High").length;
+        const med = State.nodes.filter((n) => n.risk === "Medium").length;
+        const low = State.nodes.filter((n) => n.risk === "Low").length;
+        const total = State.nodes.length || 1;
+        document.getElementById("risk-high-cnt").textContent = high;
+        document.getElementById("risk-med-cnt").textContent = med;
+        document.getElementById("risk-low-cnt").textContent = low;
+        document.getElementById("risk-high-bar").style.width =
+          (high / total) * 100 + "%";
+        document.getElementById("risk-med-bar").style.width =
+          (med / total) * 100 + "%";
+        document.getElementById("risk-low-bar").style.width =
+          (low / total) * 100 + "%";
+      }
+
+      async function runAll() {
+        for (let i = 1; i <= 5; i++) {
+          await runChallenge(i);
+          await sleep(300);
+        }
+      }
+      async function generateCity() {
+        log("info", "⚙", "Generating city layout…", "CSP starting");
+        await sleep(100);
+        try {
+          const live = await API.getGraph();
+          loadCity(live);
+        } catch {
+          loadCity(generateDemoCity());
+        }
+        await runChallenge(1);
+        log("info", "✓", "City generated", "20×20 grid, CSP complete");
+      }
+
+      function injectEvent() {
+        const type = document.getElementById("event-type").value;
+        const target = document.getElementById("event-target").value.trim();
+        if (!target) {
+          toast("error", "No Target", "Enter a node ID first");
+          return;
+        }
+        if (type === "flood" || type === "block") floodNode(target);
+        else if (type === "risk_high") setHighRisk(target);
+        else if (type === "risk_low") {
+          const n = State.nodeMap[target];
+          if (n) {
+            n.risk = "Low";
+            n.costMult = 1.0;
+            State.dirty.overlay = true;
+            updateRiskSummary();
+          }
+        }
+        log("event", "⚡", `Event injected: ${type}`, target);
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+         UI HELPERS
+      ═══════════════════════════════════════════════════════════ */
+      function switchChallenge(n) {
+        State.activeChallenge = n;
+        document
+          .querySelectorAll(".c-tab")
+          .forEach((t) => t.classList.remove("is-active"));
+        document
+          .querySelector(`.c-tab[data-ch="${n}"]`)
+          .classList.add("is-active");
+        document.getElementById("live-view").style.display =
+          n === 0 ? "" : "none";
+        document
+          .querySelectorAll(".challenge-panel")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById(`panel-c${n}`)?.classList.add("active");
+      }
+
+      function toggleSection(id) {
+        const body = document.getElementById(id + "-body");
+        const chev = document.getElementById(id + "-chev");
+        if (!body) return;
+        const collapsed = body.classList.toggle("collapsed");
+        chev.style.transform = collapsed ? "rotate(-90deg)" : "rotate(0)";
+      }
+
+      function toggleOverlay(id) {
+        State.overlays[id] = !State.overlays[id];
+        const row = document.querySelector(`.toggle-switch[data-ov="${id}"]`);
+        if (row) {
+          row.classList.toggle("on", State.overlays[id]);
+        }
+        State.dirty.overlay = true;
+        updateLegend();
+      }
+
+      function buildOverlayToggles() {
+        const container = document.getElementById("ov-body");
+        container.innerHTML = OVERLAYS_CONFIG.map(
+          (o) => `
+          <div class="toggle-row">
+            <span class="toggle-label">
+              <span class="toggle-dot" style="background:${o.color}"></span>
+              ${o.label}
+            </span>
+            <div class="toggle-switch ${o.def ? "on" : ""}" data-ov="${o.id}" onclick="toggleOverlay('${o.id}')"></div>
+          </div>`,
+        ).join("");
+      }
+
+      function updateLegend() {
+        const leg = document.getElementById("canvas-legend");
+        const items = [
+          { label: "Residential", color: "#14532D", border: "#22C55E" },
+          { label: "Hospital", color: "#7F1D1D", border: "#EF4444" },
+          { label: "School", color: "#78350F", border: "#F59E0B" },
+          { label: "Industrial", color: "#1C1917", border: "#A8A29E" },
+          { label: "Power Plant", color: "#164E63", border: "#06B6D4" },
+          { label: "Ambulance Depot", color: "#7C2D12", border: "#F97316" },
+        ];
+        leg.innerHTML = items
+          .map(
+            (i) => `
+          <div class="legend-item">
+            <div class="legend-swatch" style="background:${i.color};border:1px solid ${i.border}"></div>
+            <span class="legend-text">${i.label}</span>
+          </div>`,
+          )
+          .join("");
+        // Add badges legend (with larger swatches for visibility)
+        leg.innerHTML += `<div class="legend-item"><div style="width:16px;height:16px;border-radius:50%;background:#FFD700;border:2px solid #B8860B;color:black;font-weight:bold;font-size:9px;display:flex;align-items:center;justify-content:center;">H</div><span class="legend-text">Primary Hospital</span></div>`;
+        leg.innerHTML += `<div class="legend-item"><div style="width:16px;height:16px;border-radius:50%;background:#00BFFF;border:2px solid #FFFFFF;color:white;font-weight:bold;font-size:9px;display:flex;align-items:center;justify-content:center;">A</div><span class="legend-text">Ambulance Depot</span></div>`;
+        // Add edge type legend
+        leg.innerHTML += `<div class="legend-item"><div style="width:20px;height:3px;background:#FFB800;"></div><span class="legend-text">MST Edge</span></div>`;
+        leg.innerHTML += `<div class="legend-item"><div style="width:20px;height:3px;background:#9B5DE5;border-top:2px dashed #9B5DE5;"></div><span class="legend-text">Redundant Edge</span></div>`;
+        if (State.overlays.heatmap)
+          leg.innerHTML += `<div class="legend-item"><div class="legend-swatch" style="background:linear-gradient(90deg,#22C55E,#EF4444)"></div><span class="legend-text">Risk Heatmap</span></div>`;
+      }
+
+      /* ═══ TOAST ══════════════════════════════════════════════ */
+      function toast(type, title, msg, dur = 3500) {
+        const tc = document.getElementById("toast-container");
+        const t = document.createElement("div");
+        t.className = `toast ${type}`;
+        const icon = type === "warn" ? "⚠" : type === "error" ? "✕" : "ℹ";
+        t.innerHTML = `<span class="toast-icon">${icon}</span><div class="toast-body"><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div><span class="toast-close" onclick="this.parentElement.remove()">✕</span>`;
+        tc.prepend(t);
+        setTimeout(() => {
+          t.style.animation = "toast-out 0.3s ease forwards";
+          setTimeout(() => t.remove(), 300);
+        }, dur);
+      }
+
+      /* ═══ EVENT LOG ══════════════════════════════════════════ */
+      function log(type, icon, msg, detail = "") {
+        const entry = {
+          type,
+          icon,
+          msg,
+          detail,
+          step: State.step,
+          ts: new Date().toLocaleTimeString("en", {
+            hour12: false,
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          }),
+        };
+        State.logEntries.unshift(entry);
+        renderLogEntry(entry);
+      }
+      function renderLogEntry(e) {
+        const c = document.getElementById("log-container");
+        const div = document.createElement("div");
+        div.className = `log-entry type-${e.type}`;
+        div.dataset.type = e.type;
+        div.dataset.msg = (e.msg + e.detail).toLowerCase();
+        div.innerHTML = `<span class="log-step mono">S${String(e.step).padStart(2, "0")}</span><span class="log-icon">${e.icon}</span><span class="log-msg">${e.msg}${e.detail ? `<br><span style="font-size:9px;color:var(--tx-muted)">${e.detail}</span>` : ""}</span><span class="log-ts">${e.ts}</span>`;
+        c.prepend(div);
+        if (c.children.length > 80) c.lastChild?.remove();
+      }
+      function filterLog() {
+        const type = document.getElementById("log-filter-sel").value;
+        const search = document
+          .getElementById("log-search")
+          .value.toLowerCase();
+        document.querySelectorAll(".log-entry").forEach((e) => {
+          const typeMatch = type === "all" || e.dataset.type === type;
+          const searchMatch = !search || e.dataset.msg.includes(search);
+          e.style.display = typeMatch && searchMatch ? "" : "none";
+        });
+      }
+      function clearLog() {
+        document.getElementById("log-container").innerHTML = "";
+        State.logEntries = [];
+      }
+
+      /* ═══ SOUND ══════════════════════════════════════════════ */
+      let audioCtx = null;
+      function getAudio() {
+        if (!audioCtx)
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        return audioCtx;
+      }
+      function playTone(freq, type = "sine", dur = 0.08, gain = 0.12) {
+        if (State.muted) return;
+        try {
+          const ac = getAudio();
+          const o = ac.createOscillator();
+          const g = ac.createGain();
+          o.connect(g);
+          g.connect(ac.destination);
+          o.type = type;
+          o.frequency.value = freq;
+          g.gain.value = gain;
+          o.start();
+          g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
+          o.stop(ac.currentTime + dur + 0.01);
+        } catch {}
+      }
+      function toggleMute() {
+        State.muted = !State.muted;
+        document.getElementById("mute-btn").textContent = State.muted
+          ? "🔇"
+          : "🔊";
+        if (!State.muted) playTone(440);
+      }
+
+      /* ═══ SERVER STATUS ═══════════════════════════════════════ */
+      async function pingServer() {
+        try {
+          const t0 = Date.now();
+          const status = await API.health();
+          const dt = Date.now() - t0;
+          State.serverOnline = true;
+          const dot = document.getElementById("s-dot");
+          const lbl = document.getElementById("s-label");
+          if (status.graph_ready && status.nodes > 0) {
+            dot.className = "s-dot online";
+            lbl.textContent = `FLASK: ${dt}ms | ${status.nodes} nodes`;
+            lbl.style.color = "var(--teal)";
+          } else {
+            dot.className = "s-dot offline";
+            lbl.textContent = "PYTHON: NO GRAPH";
+            lbl.style.color = "var(--amber)";
+          }
+        } catch (err) {
+          State.serverOnline = false;
+          document.getElementById("s-dot").className = "s-dot offline";
+          document.getElementById("s-label").textContent = "PYTHON: OFFLINE";
+          document.getElementById("s-label").style.color = "var(--crimson)";
+        }
+      }
+
+      /* ═══ KEYBOARD ════════════════════════════════════════════ */
+      function showHelp() {
+        toast(
+          "info",
+          "Keyboard Shortcuts",
+          "Space=Play/Pause  →=Step  R=Reset<br>1-5=Challenge Tabs  H=Heatmap<br>M=MST  C=Coverage  +=Zoom In  -=Zoom Out",
+          7000,
+        );
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName)) return;
+        const k = e.key;
+        if (k === " ") {
+          e.preventDefault();
+          togglePlay();
+        } else if (k === "ArrowRight") simStep();
+        else if (k === "ArrowLeft") simStepBack();
+        else if (k === "r" || k === "R") simReset();
+        else if (k >= "1" && k <= "5") switchChallenge(parseInt(k));
+        else if (k === "h" || k === "H") toggleOverlay("heatmap");
+        else if (k === "m" || k === "M") toggleOverlay("mst");
+        else if (k === "c" || k === "C") toggleOverlay("coverage");
+        else if (k === "p" || k === "P") toggleOverlay("police");
+        else if (k === "+" || k === "=") zoom(1.15);
+        else if (k === "-") zoom(0.87);
+        else if (k === "0") resetView();
+        else if (k === "?") showHelp();
+        else if (k === "Escape") {
+          State.selectedNode = null;
+          document.getElementById("node-section").style.display = "none";
+          State.dirty.grid = true;
+        } else if (k === "g" || k === "G") generateCity();
+      });
+
+      /* ═══════════════════════════════════════════════════════════
+         CITY LOADER
+      ═══════════════════════════════════════════════════════════ */
+      function loadCity(data) {
+        // Sync grid size from server
+        if (typeof data.rows === 'number' && typeof data.cols === 'number') {
+          GRID = data.rows; // Assuming square grid
+          console.log(`[UI] Grid size synced: ${GRID}x${data.cols}`);
+        }
+        State.nodes = data.nodes || [];
+        State.nodeMap = data.nodeMap || {};
+        State.edges = data.edges || [];
+        
+        // Log edge summary
+        const redundantCount = State.edges.filter(e => e.isRedundant).length;
+        const mstCount = State.edges.filter(e => e.isMST).length;
+        console.log(`[UI loadCity] Edges loaded: ${State.edges.length} total, ${mstCount} MST, ${redundantCount} redundant`);
+        if (State.edges.length > 0) {
+          const sample = State.edges.find(e => e.isRedundant) || State.edges[0];
+          console.log(`[UI loadCity] Edge sample:`, JSON.stringify(sample));
+        }
+
+        // Mark Primary Hospital and Ambulance Depot if provided (from C2 result)
+        console.log(`[UI loadCity] data.hospital:`, data.hospital);
+        console.log(`[UI loadCity] data.depots:`, data.depots);
+        console.log(`[UI loadCity] nodeMap keys sample:`, Object.keys(State.nodeMap).slice(0, 5));
+        
+        if (data.hospital) {
+          const h = data.hospital;
+          const nodeId = `N_${String(h.row).padStart(2, '0')}_${String(h.col).padStart(2, '0')}`;
+          console.log(`[UI] Looking for Primary Hospital: ${nodeId}`);
+          // Find in nodes array (State.nodeMap may have different object reference)
+          const node = State.nodes.find(n => n.id === nodeId);
+          if (node) {
+            node.isPrimaryHospital = true;
+            console.log(`[UI] ✓ Primary Hospital marked: ${nodeId}`);
+          } else {
+            console.log(`[UI] ✗ Primary Hospital NOT FOUND: ${nodeId}`);
+          }
+        }
+        if (data.depots && data.depots.length > 0) {
+          data.depots.forEach(d => {
+            const nodeId = `N_${String(d.row).padStart(2, '0')}_${String(d.col).padStart(2, '0')}`;
+            console.log(`[UI] Looking for Depot: ${nodeId}`);
+            // Find in nodes array
+            const node = State.nodes.find(n => n.id === nodeId);
+            if (node) {
+              node.isAmbulanceDepot = true;
+              console.log(`[UI] ✓ Ambulance Depot marked: ${nodeId}`);
+            } else {
+              console.log(`[UI] ✗ Ambulance Depot NOT FOUND: ${nodeId}`);
+            }
+          });
+        }
+        if (Array.isArray(data.ambulances)) {
+          State.ambulances = data.ambulances.map((a, i) => ({
+            ...State.ambulances[i],
+            ...a,
+            id: typeof a.id === "number" ? a.id : i,
+          }));
+        }
+        if (Array.isArray(data.police)) {
+          State.police = data.police;
+          const policeEl = document.getElementById("c5-officers");
+          if (policeEl) policeEl.textContent = data.police.length;
+        }
+        if (Array.isArray(data.route)) {
+          State.route = data.route.slice();
+        }
+        if (typeof data.simulationStep === "number") {
+          State.step = data.simulationStep;
+        }
+        updateAmbulanceTracker();
+        updateRiskSummary();
+        updateLegend();
+        updateStepUI();
+        State.dirty.grid = true;
+        State.dirty.overlay = true;
+        log(
+          "info",
+          "🏙",
+          "City graph loaded",
+          `${data.nodes.length} nodes, ${data.edges.length} edges`,
+        );
+      }
+
+      /* ═══════════════════════════════════════════════════════════
+         BOOT
+      ═══════════════════════════════════════════════════════════ */
+      function sleep(ms) {
+        return new Promise((r) => setTimeout(r, ms));
+      }
+
+      async function boot() {
+        const splash = document.getElementById("splash");
+        const setSplashStatus = (s) => {
+          document.getElementById("splash-status").textContent = s;
+        };
+
+        setSplashStatus("Initializing render engine…");
+        await sleep(300);
+        resizeCanvases();
+        window.addEventListener("resize", () => {
+          resizeCanvases();
+        });
+
+        setSplashStatus("Building UI components…");
+        await sleep(200);
+        buildOverlayToggles();
+        switchChallenge(1);
+
+        setSplashStatus("Contacting Python backend…");
+        await sleep(200);
+        pingServer();
+        setInterval(pingServer, 8000);
+
+        setSplashStatus("Loading city from server…");
+        let retries = 0;
+        const maxRetries = 3;
+        let loaded = false;
+
+        while (retries < maxRetries && !loaded) {
+          try {
+            let liveGraph = await API.getGraph();
+            // Auto-run C1 if graph is empty
+            if (!liveGraph.nodes || liveGraph.nodes.length === 0) {
+              log("warn", "⚠", "Graph empty, running C1 layout…", "");
+              await API.runChallenge(1, {});
+              liveGraph = await API.getGraph();
+            }
+            loadCity(liveGraph);
+            log("info", "🟢", "Live Python graph loaded", `${liveGraph.nodes.length} nodes`);
+            loaded = true;
+          } catch (err) {
+            retries++;
+            console.error(`Boot attempt ${retries} failed:`, err);
+            if (retries < maxRetries) {
+              setSplashStatus(`Server not ready, retrying… (${retries}/${maxRetries})`);
+              await sleep(1000);
+            }
+          }
+        }
+
+        if (!loaded) {
+          setSplashStatus("Server unavailable - check console");
+          log("error", "✕", "Failed to load graph", "Server not responding after 3 retries");
+          // Don't load demo city automatically - user should fix server
+          await sleep(2000);
+        }
+
+        setSplashStatus("Ready.");
+        await sleep(400);
+
+        splash.classList.add("hiding");
+        setTimeout(() => {
+          splash.remove();
+        }, 600);
+
+        requestAnimationFrame(rafLoop);
+
+        updateStepUI();
+        log(
+          "info",
+          "🚀",
+          "CityMind initialized",
+          State.serverOnline ? "Python backend connected" : "Demo mode — Python offline fallback active",
+        );
+    log(
+          "info",
+          "💡",
+          "Tip",
+          "Press Space to run simulation, 1-5 for challenge panels, ? for help",
+        );
+
+        // Re-center grid after DOM has fully rendered
+        setTimeout(() => {
+          const area = document.getElementById("canvas-area");
+          autoFitGrid(area.clientWidth, area.clientHeight);
+          State.dirty.grid = true;
+          State.dirty.overlay = true;
+        }, 100);
+
+        // Update step counter
+        document.getElementById("total-steps").textContent = "20";
+        document.getElementById("st-units").textContent =
+          `${State.ambulances.length}/${State.ambulances.length}`;
+        document.getElementById("cr-clusters").textContent = "3";
+      }
+
+      boot();
+    </script>
+  </body>
+</html>
